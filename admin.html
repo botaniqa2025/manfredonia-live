@@ -181,6 +181,7 @@
       <div>
         <label>Tipo / Icona</label>
         <select id="commIcona" onchange="onCommIconChange()">
+          <option value="SOLO_MIN">💬 Solo Minuto (azione senza icona)</option>
           <option value="⚽">⚽ Azione / Tiro</option>
           <option value="🥅">🥅 GOOOOL! (Blu scuro)</option>
           <option value="🔴">🔴 Autogol (Blu scuro)</option>
@@ -189,7 +190,7 @@
           <option value="🔄">🔄 Sostituzione</option>
           <option value="🚩">🚩 Calcio d'angolo</option>
           <option value="⏱️">⏱️ Fischio / Recupero</option>
-          <option value="NOTA">📝 Nota (senza icona)</option>
+          <option value="NOTA">📝 Nota libera (senza minuto/icona)</option>
         </select>
       </div>
       <div>
@@ -474,7 +475,7 @@ function renderForm(){
 function renderLists(){
   document.getElementById('listaCommento').innerHTML = matchData.commento.map((c,i)=>`
     <div class="item-row">
-      <span>${c.saliente ? '⭐ ' : ''}${c.isNota || !c.icona ? `📝 <i>${c.testo}</i>` : `<b>${c.min}</b> ${c.icona} ${c.score?`[${c.score}] `:''}${c.testo}`}</span>
+      <span>${c.saliente ? '⭐ ' : ''}${c.isNota && !c.min ? `📝 <i>${c.testo}</i>` : `<b>${c.min}</b> ${c.icona ? c.icona + ' ' : ''}${c.score?`[${c.score}] `:''}${c.testo}`}</span>
       <button class="btn red" onclick="delComm(${i})">Elimina</button>
     </div>
   `).join('');
@@ -500,11 +501,13 @@ function addCommento(){
   if(!testo) return alert("Scrivi prima il testo!");
 
   const isGol = (sel === '🥅' || sel === '🔴');
+  const min = document.getElementById('commMin').value.trim() || getCurrentAutoMin() || "1'";
 
   if (sel === 'NOTA') {
     matchData.commento.unshift({ isNota: true, min: "", icona: "", testo, saliente, isGol: false });
+  } else if (sel === 'SOLO_MIN') {
+    matchData.commento.unshift({ isNota: false, min, icona: "", testo, saliente, isGol: false });
   } else {
-    const min = document.getElementById('commMin').value.trim() || getCurrentAutoMin() || "1'";
     matchData.commento.unshift({ isNota: false, min, icona: sel, testo, saliente: saliente || isGol, isGol, score });
   }
   document.getElementById('commTesto').value = '';

@@ -30,6 +30,7 @@
   .save-bar{position:fixed;bottom:0;left:0;right:0;background:#fff;padding:12px;box-shadow:0 -4px 16px rgba(0,0,0,.12);z-index:99;display:flex;gap:8px;justify-content:center}
   .save-bar button{max-width:450px;margin:0;font-size:15px;padding:14px;background:#16a34a}
   .toast{position:fixed;top:14px;left:50%;transform:translateX(-50%);background:#0f172a;color:#fff;padding:10px 18px;border-radius:20px;font-size:13px;font-weight:700;display:none;z-index:999}
+  .live-pill{background:#e60026;color:#fff;padding:2px 8px;border-radius:10px;font-size:11px}
 </style>
 </head>
 <body>
@@ -52,24 +53,26 @@
     </div>
   </div>
 
-  <!-- RISULTATO E TEMPO -->
+  <!-- RISULTATO E CRONOMETRO AUTOMATICO -->
   <div class="card">
-    <h2>⏱️ Risultato & Tempo Live</h2>
+    <h2>⏱️ Risultato & Cronometro Auto <span class="live-pill" id="livePreview">PRE-PARTITA</span></h2>
     <div class="grid2">
       <div>
-        <label>Stato Partita</label>
-        <select id="stato">
+        <label>Fase Partita</label>
+        <select id="stato" onchange="onPhaseChange()">
           <option value="PRE-PARTITA">PRE-PARTITA</option>
-          <option value="LIVE">LIVE</option>
+          <option value="1° TEMPO">1° TEMPO (Auto 1'-45')</option>
           <option value="INTERVALLO">INTERVALLO</option>
+          <option value="2° TEMPO">2° TEMPO (Auto 46'-90')</option>
           <option value="FINALE">FINALE</option>
         </select>
       </div>
       <div>
-        <label>Minuto (es. 34' o 90+2')</label>
-        <input type="text" id="minuto" placeholder="34'">
+        <label>Correggi minuto ora (opzionale)</label>
+        <input type="number" id="minOverride" placeholder="Es. 12">
       </div>
     </div>
+    <p style="font-size:11px;color:#64748b;margin-top:6px;">Quando selezioni <b>1° TEMPO</b> o <b>2° TEMPO</b> e premi Pubblica, il cronometro scorre da solo ogni minuto!</p>
     <div class="grid2" style="margin-top:10px;">
       <div>
         <label id="lblCasa">Gol Casa</label>
@@ -95,8 +98,8 @@
     <h2>🎙️ Aggiungi Commento Live</h2>
     <div class="grid3">
       <div>
-        <label>Minuto</label>
-        <input type="text" id="commMin" placeholder="35'">
+        <label>Minuto (auto se vuoto)</label>
+        <input type="text" id="commMin" placeholder="Auto">
       </div>
       <div style="grid-column:span 2;">
         <label>Icona</label>
@@ -119,7 +122,7 @@
     <div id="listaCommento" style="margin-top:10px;"></div>
   </div>
 
-  <!-- EVENTI RIASSUNTO (GOL, CARTELLINI, CAMBI) -->
+  <!-- EVENTI RIASSUNTO -->
   <div class="card">
     <h2>📋 Gol, Cartellini e Cambi (Riassunto)</h2>
     <div class="grid3">
@@ -131,8 +134,8 @@
         </select>
       </div>
       <div>
-        <label>Minuto</label>
-        <input type="text" id="evMin" placeholder="12'">
+        <label>Minuto (auto se vuoto)</label>
+        <input type="text" id="evMin" placeholder="Auto">
       </div>
       <div>
         <label>Squadra</label>
@@ -189,14 +192,14 @@
       <div><label>Modulo Casa</label><input type="text" id="modCasa"></div>
       <div><label>Modulo Ospite</label><input type="text" id="modOspite"></div>
     </div>
-    <div style="margin-top:8px;"><label>Link Logo Casa (.png/.jpg)</label><input type="text" id="logoCasa"></div>
-    <div style="margin-top:8px;"><label>Link Logo Ospite (.png/.jpg)</label><input type="text" id="logoOspite"></div>
+    <div style="margin-top:8px;"><label>Link Logo Casa (.png/.jpg/.webp)</label><input type="text" id="logoCasa"></div>
+    <div style="margin-top:8px;"><label>Link Logo Ospite (.png/.jpg/.webp)</label><input type="text" id="logoOspite"></div>
   </div>
 
   <!-- FORMAZIONI -->
   <div class="card">
     <h2>👕 Formazioni (Numero - Cognome Nome)</h2>
-    <p style="font-size:11px;color:#64748b;margin-bottom:8px;">Scrivi un giocatore per riga nel formato: <b>23 - Nobile Tommaso</b> (puoi aggiungere ⚽ 🟨 🟥 🔄 alla fine della riga).</p>
+    <p style="font-size:11px;color:#64748b;margin-bottom:8px;">Scrivi un giocatore per riga: <b>23 - Nobile Tommaso</b> (puoi aggiungere ⚽ 🟨 🟥 🔄 alla fine).</p>
     <div class="grid2">
       <div><label>Titolari Casa</label><textarea id="fCasaTit" style="min-height:190px;font-size:12px;"></textarea></div>
       <div><label>Titolari Ospite</label><textarea id="fOspTit" style="min-height:190px;font-size:12px;"></textarea></div>
@@ -217,6 +220,7 @@
 const GIST_ID = "56a02aeaf74c413358c91b385c2d83d6";
 const RAW_URL = `https://gist.githubusercontent.com/botaniqa2025/${GIST_ID}/raw/match.json`;
 let matchData = null;
+let phaseChanged = false;
 
 function showToast(msg){
   const t=document.getElementById('toast');
@@ -231,6 +235,25 @@ function saveToken(){
   document.getElementById('tokenCard').style.border="2px solid #16a34a";
   showToast("Token salvato sul telefono!");
 }
+
+function getCurrentAutoMin(){
+  if(!matchData || !matchData.timerStart) return "";
+  const elapsed = Math.floor((Date.now() - matchData.timerStart) / 60000);
+  const base = matchData.timerBase || 1;
+  const tot = Math.max(base, base + elapsed);
+  if(matchData.stato === '1° TEMPO' && tot > 45) return `45+${tot-45}'`;
+  if(matchData.stato === '2° TEMPO' && tot > 90) return `90+${tot-90}'`;
+  return `${tot}'`;
+}
+
+function updatePreviewBadge(){
+  if(!matchData) return;
+  const p = document.getElementById('livePreview');
+  const m = getCurrentAutoMin();
+  p.innerText = m ? `${matchData.stato} (${m})` : matchData.stato;
+}
+
+function onPhaseChange(){ phaseChanged = true; }
 
 function playersToText(arr){
   return (arr||[]).map(p=>`${p.num} - ${p.nome}${p.badge?' '+p.badge:''}`).join('\n');
@@ -258,13 +281,14 @@ async function init(){
   const res = await fetch(RAW_URL + "?t=" + Date.now());
   matchData = await res.json();
   renderForm();
+  setInterval(updatePreviewBadge, 5000);
 }
 
 function renderForm(){
   document.getElementById('competizione').value = matchData.competizione || '';
   document.getElementById('dataOra').value = matchData.dataOra || '';
-  document.getElementById('stato').value = matchData.stato || 'LIVE';
-  document.getElementById('minuto').value = matchData.minuto || '';
+  const stEl = document.getElementById('stato');
+  stEl.value = ['PRE-PARTITA','1° TEMPO','INTERVALLO','2° TEMPO','FINALE'].includes(matchData.stato) ? matchData.stato : '1° TEMPO';
   document.getElementById('nomeCasa').value = matchData.casa.nome || '';
   document.getElementById('nomeOspite').value = matchData.ospite.nome || '';
   document.getElementById('lblCasa').innerText = "Gol " + matchData.casa.nome;
@@ -276,7 +300,6 @@ function renderForm(){
   document.getElementById('logoCasa').value = matchData.casa.logo || '';
   document.getElementById('logoOspite').value = matchData.ospite.logo || '';
 
-  // Statistiche
   document.getElementById('boxStatistiche').innerHTML = matchData.statistiche.map((s,i)=>`
     <div class="stat-row">
       <input type="text" id="stC_${i}" value="${s.casa}">
@@ -285,13 +308,13 @@ function renderForm(){
     </div>
   `).join('');
 
-  // Formazioni
   document.getElementById('fCasaTit').value = playersToText(matchData.formazioni.casaTitolari);
   document.getElementById('fOspTit').value = playersToText(matchData.formazioni.ospiteTitolari);
   document.getElementById('fCasaPan').value = playersToText(matchData.formazioni.casaPanchina);
   document.getElementById('fOspPan').value = playersToText(matchData.formazioni.ospitePanchina);
 
   renderLists();
+  updatePreviewBadge();
 }
 
 function renderLists(){
@@ -316,12 +339,13 @@ function chgGol(team, delta){
 }
 
 function addCommento(){
-  const min = document.getElementById('commMin').value.trim() || document.getElementById('minuto').value.trim();
+  const min = document.getElementById('commMin').value.trim() || getCurrentAutoMin() || "1'";
   const icona = document.getElementById('commIcona').value;
   const testo = document.getElementById('commTesto').value.trim();
   if(!testo) return alert("Scrivi prima il testo della cronaca!");
   matchData.commento.unshift({ min, icona, testo });
   document.getElementById('commTesto').value = '';
+  document.getElementById('commMin').value = '';
   renderLists();
   showToast("Aggiunto! Premi PUBBLICA in basso");
 }
@@ -330,7 +354,7 @@ function delComm(i){ matchData.commento.splice(i,1); renderLists(); }
 
 function addEvento(){
   const tempo = parseInt(document.getElementById('evTempo').value);
-  const min = document.getElementById('evMin').value.trim() || document.getElementById('minuto').value.trim();
+  const min = document.getElementById('evMin').value.trim() || getCurrentAutoMin() || "1'";
   const squadra = document.getElementById('evSquadra').value;
   const tipo = document.getElementById('evTipo').value;
   const testo = document.getElementById('evTesto').value.trim();
@@ -339,6 +363,7 @@ function addEvento(){
   matchData.riassunto.push({ tempo, min, squadra, tipo, testo, extra });
   document.getElementById('evTesto').value = '';
   document.getElementById('evExtra').value = '';
+  document.getElementById('evMin').value = '';
   renderLists();
   showToast("Evento aggiunto! Premi PUBBLICA");
 }
@@ -352,7 +377,8 @@ function resetMatch(){
   matchData.casa.gol = 0;
   matchData.ospite.gol = 0;
   matchData.stato = "PRE-PARTITA";
-  matchData.minuto = "";
+  matchData.timerStart = null;
+  matchData.timerBase = 1;
   renderForm();
   showToast("Partita azzerata! Premi PUBBLICA");
 }
@@ -361,11 +387,29 @@ async function saveToGitHub(){
   const token = localStorage.getItem('mf_gh_token') || document.getElementById('ghToken').value.trim();
   if(!token) return alert("Inserisci prima il tuo Token GitHub in alto!");
 
-  // Raccogli tutti i campi
+  const newStato = document.getElementById('stato').value;
+  const overrideVal = parseInt(document.getElementById('minOverride').value);
+
+  if (!isNaN(overrideVal) && overrideVal > 0) {
+    matchData.timerStart = Date.now();
+    matchData.timerBase = overrideVal;
+    document.getElementById('minOverride').value = '';
+  } else if (phaseChanged) {
+    if (newStato === '1° TEMPO') {
+      matchData.timerStart = Date.now();
+      matchData.timerBase = 1;
+    } else if (newStato === '2° TEMPO') {
+      matchData.timerStart = Date.now();
+      matchData.timerBase = 46;
+    } else {
+      matchData.timerStart = null;
+    }
+    phaseChanged = false;
+  }
+
+  matchData.stato = newStato;
   matchData.competizione = document.getElementById('competizione').value.trim();
   matchData.dataOra = document.getElementById('dataOra').value.trim();
-  matchData.stato = document.getElementById('stato').value;
-  matchData.minuto = document.getElementById('minuto').value.trim();
   matchData.casa.nome = document.getElementById('nomeCasa').value.trim();
   matchData.ospite.nome = document.getElementById('nomeOspite').value.trim();
   matchData.casa.modulo = document.getElementById('modCasa').value.trim();
@@ -373,7 +417,6 @@ async function saveToGitHub(){
   matchData.casa.logo = document.getElementById('logoCasa').value.trim();
   matchData.ospite.logo = document.getElementById('logoOspite').value.trim();
 
-  // Calcola percentuali barre statistiche
   matchData.statistiche.forEach((s,i)=>{
     s.casa = document.getElementById(`stC_${i}`).value.trim();
     s.ospite = document.getElementById(`stO_${i}`).value.trim();
@@ -382,7 +425,6 @@ async function saveToGitHub(){
     s.percCasa = (nC + nO) > 0 ? Math.round((nC / (nC + nO)) * 100) : 50;
   });
 
-  // Formazioni
   matchData.formazioni.casaTitolari = textToPlayers(document.getElementById('fCasaTit').value);
   matchData.formazioni.ospiteTitolari = textToPlayers(document.getElementById('fOspTit').value);
   matchData.formazioni.casaPanchina = textToPlayers(document.getElementById('fCasaPan').value);
@@ -405,9 +447,10 @@ async function saveToGitHub(){
       })
     });
     if(!res.ok) throw new Error("Errore Token o rete");
-    showToast("✅ ONLINE! Sito aggiornato!");
+    updatePreviewBadge();
+    showToast("✅ ONLINE! Cronometro e dati aggiornati!");
   }catch(e){
-    alert("Errore durante il salvataggio: controlla che il Token GitHub sia corretto.");
+    alert("Errore durante il salvataggio: controlla il Token GitHub.");
   }finally{
     btn.innerText = "💾 PUBBLICA AGGIORNAMENTO LIVE";
     btn.disabled = false;

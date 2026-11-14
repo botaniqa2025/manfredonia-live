@@ -20,13 +20,21 @@
   .score-ctrl{display:flex;align-items:center;justify-content:center;gap:12px;background:#f8fafc;padding:10px;border-radius:10px;margin-top:8px}
   .btn-circle{width:38px;height:38px;border-radius:50%;border:none;background:#005596;color:#fff;font-size:20px;font-weight:800;cursor:pointer}
   .btn-circle.minus{background:#94a3b8}
+  .btn-sm{width:30px;height:30px;border-radius:8px;border:none;background:#005596;color:#fff;font-size:17px;font-weight:800;cursor:pointer}
+  .btn-sm.minus{background:#94a3b8}
   .big-num{font-size:28px;font-weight:800;min-width:30px;text-align:center}
   .btn{padding:10px 14px;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;background:#005596;color:#fff;width:100%;margin-top:8px}
   .btn.green{background:#16a34a}
   .btn.red{background:#dc2626;width:auto;padding:4px 8px;font-size:11px;margin:0}
   .btn.gray{background:#64748b}
+  .btn.share{background:#0284c7;margin-top:0;margin-bottom:12px}
   .item-row{display:flex;justify-content:space-between;align-items:center;padding:8px;background:#f8fafc;border-radius:8px;margin-top:6px;font-size:13px;gap:8px}
-  .stat-row{display:grid;grid-template-columns:65px 1fr 65px;gap:8px;align-items:center;margin-bottom:8px;text-align:center;font-size:12px;font-weight:700}
+  .stat-row{display:flex;justify-content:space-between;align-items:center;padding:8px 4px;border-bottom:1px solid #f1f5f9;font-size:12.5px;font-weight:700}
+  .stat-ctrl{display:flex;align-items:center;gap:6px}
+  .stat-val{min-width:24px;text-align:center;font-size:15px;font-weight:800}
+  .rec-bar{display:flex;gap:5px;margin-top:8px;align-items:center;flex-wrap:wrap}
+  .rec-btn{padding:5px 9px;border:1px solid #cbd5e1;border-radius:6px;background:#f8fafc;font-size:12px;font-weight:700;cursor:pointer}
+  .rec-btn.active{background:#005596;color:#fff;border-color:#005596}
   .save-bar{position:fixed;bottom:0;left:0;right:0;background:#fff;padding:12px;box-shadow:0 -4px 16px rgba(0,0,0,.12);z-index:99;display:flex;gap:8px;justify-content:center}
   .save-bar button{max-width:450px;margin:0;font-size:15px;padding:14px;background:#16a34a}
   .toast{position:fixed;top:14px;left:50%;transform:translateX(-50%);background:#0f172a;color:#fff;padding:10px 18px;border-radius:20px;font-size:13px;font-weight:700;display:none;z-index:999}
@@ -42,6 +50,8 @@
     <h1>⚽ Regia Live Manfredonia</h1>
     <a href="./" target="_blank" style="color:#fff;font-size:12px;font-weight:700;">Vedi Sito ↗</a>
   </div>
+
+  <button class="btn share" onclick="copySocialPost()">📲 Copia Aggiornamento per WhatsApp / Social</button>
 
   <!-- TOKEN -->
   <div class="card" id="tokenCard">
@@ -72,6 +82,18 @@
         <input type="number" id="minOverride" placeholder="Es. 12">
       </div>
     </div>
+
+    <div class="rec-bar">
+      <span style="font-size:11px;font-weight:700;color:#64748b;">Recupero:</span>
+      <button class="rec-btn" onclick="setRec('')">Nessuno</button>
+      <button class="rec-btn" onclick="setRec('1')">+1'</button>
+      <button class="rec-btn" onclick="setRec('2')">+2'</button>
+      <button class="rec-btn" onclick="setRec('3')">+3'</button>
+      <button class="rec-btn" onclick="setRec('4')">+4'</button>
+      <button class="rec-btn" onclick="setRec('5')">+5'</button>
+      <button class="rec-btn" onclick="setRec('6')">+6'</button>
+    </div>
+
     <div class="grid2" style="margin-top:10px;">
       <div>
         <label id="lblCasa">Gol Casa</label>
@@ -92,12 +114,66 @@
     </div>
   </div>
 
+  <!-- EVENTI RIASSUNTO CON MENU GIOCATORI E AUTOMAZIONI -->
+  <div class="card">
+    <h2>📋 Gol, Cartellini e Cambi (Auto-Formazioni)</h2>
+    <div class="grid3">
+      <div>
+        <label>Tempo</label>
+        <select id="evTempo">
+          <option value="1">1° Tempo</option>
+          <option value="2">2° Tempo</option>
+        </select>
+      </div>
+      <div>
+        <label>Minuto (auto)</label>
+        <input type="text" id="evMin" placeholder="Auto">
+      </div>
+      <div>
+        <label>Squadra</label>
+        <select id="evSquadra" onchange="refreshPlayerDropdowns()">
+          <option value="casa">Casa</option>
+          <option value="ospite">Ospite</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid2" style="margin-top:8px;">
+      <div>
+        <label>Tipo Evento</label>
+        <select id="evTipo">
+          <option value="gol">⚽ Gol (+1 Auto)</option>
+          <option value="autogol">🔴 Autogol (+1 Auto)</option>
+          <option value="giallo">🟨 Ammonizione</option>
+          <option value="rosso">🟥 Espulsione</option>
+          <option value="cambio">🔄 Sostituzione</option>
+        </select>
+      </div>
+      <div>
+        <label>Seleziona Giocatore</label>
+        <select id="evPlayerSelect" onchange="onSelectPlayer()"></select>
+      </div>
+    </div>
+    <div class="grid2" style="margin-top:8px;">
+      <div>
+        <label>Nome (o scrivi a mano)</label>
+        <input type="text" id="evTesto" placeholder="Spinelli M.">
+      </div>
+      <div>
+        <label>Assist / Esce (o scegli)</label>
+        <input type="text" id="evExtra" list="extraPlayersList" placeholder="(Sainz-Maza)">
+        <datalist id="extraPlayersList"></datalist>
+      </div>
+    </div>
+    <button class="btn" onclick="addEvento()">+ Aggiungi Evento</button>
+    <div id="listaEventi" style="margin-top:10px;"></div>
+  </div>
+
   <!-- COMMENTO DIRETTA TESTUALE & NOTE -->
   <div class="card">
     <h2>🎙️ Aggiungi Commento o Nota</h2>
     <div class="grid3">
       <div>
-        <label>Minuto (auto se vuoto)</label>
+        <label>Minuto (auto)</label>
         <input type="text" id="commMin" placeholder="Auto">
       </div>
       <div style="grid-column:span 2;">
@@ -123,71 +199,15 @@
     <div id="listaCommento" style="margin-top:10px;"></div>
   </div>
 
-  <!-- EVENTI RIASSUNTO -->
+  <!-- STATISTICHE CON TASTI +/- -->
   <div class="card">
-    <h2>📋 Gol, Cartellini e Cambi (Riassunto)</h2>
-    <div class="grid3">
-      <div>
-        <label>Tempo</label>
-        <select id="evTempo">
-          <option value="1">1° Tempo</option>
-          <option value="2">2° Tempo</option>
-        </select>
-      </div>
-      <div>
-        <label>Minuto (auto se vuoto)</label>
-        <input type="text" id="evMin" placeholder="Auto">
-      </div>
-      <div>
-        <label>Squadra</label>
-        <select id="evSquadra">
-          <option value="casa">Casa</option>
-          <option value="ospite">Ospite</option>
-        </select>
-      </div>
-    </div>
-    <div class="grid2" style="margin-top:8px;">
-      <div>
-        <label>Tipo</label>
-        <select id="evTipo">
-          <option value="gol">⚽ Gol</option>
-          <option value="autogol">🔴 Autogol</option>
-          <option value="giallo">🟨 Giallo</option>
-          <option value="rosso">🟥 Rosso</option>
-          <option value="cambio">🔄 Cambio</option>
-        </select>
-      </div>
-      <div>
-        <label>Punteggio (solo Gol/Autogol)</label>
-        <input type="text" id="evScore" placeholder="Es. 1 - 0">
-      </div>
-    </div>
-    <div class="grid2" style="margin-top:8px;">
-      <div>
-        <label>Giocatore</label>
-        <input type="text" id="evTesto" placeholder="Spinelli M.">
-      </div>
-      <div>
-        <label>Nota (Assist/Esce)</label>
-        <input type="text" id="evExtra" placeholder="(Sainz-Maza)">
-      </div>
-    </div>
-    <button class="btn" onclick="addEvento()">+ Aggiungi Evento</button>
-    <div id="listaEventi" style="margin-top:10px;"></div>
-  </div>
-
-  <!-- STATISTICHE -->
-  <div class="card">
-    <h2>📊 Statistiche Partita</h2>
-    <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:800;color:#64748b;margin-bottom:6px;">
-      <span>CASA</span><span>VOCE</span><span>OSPITE</span>
-    </div>
+    <h2>📊 Statistiche Rapide (+/-)</h2>
     <div id="boxStatistiche"></div>
   </div>
 
-  <!-- PRE-PARTITA: SQUADRE, STADIO, ALLENATORI E LOGHI -->
+  <!-- IMPOSTAZIONI PARTITA, STADIO, ALLENATORI, ARBITRI E LOGHI -->
   <div class="card">
-    <h2>🏟️ Impostazioni Partita & Loghi</h2>
+    <h2>🏟️ Info Gara, Stadio, Allenatori & Arbitri</h2>
     <div class="grid2">
       <div><label>Competizione</label><input type="text" id="competizione"></div>
       <div><label>Data e Ora</label><input type="text" id="dataOra"></div>
@@ -204,6 +224,11 @@
       <div><label>Allenatore Casa</label><input type="text" id="allCasa" placeholder="Mister..."></div>
       <div><label>Allenatore Ospite</label><input type="text" id="allOspite" placeholder="Mister..."></div>
     </div>
+    <div class="grid3" style="margin-top:8px;">
+      <div><label>Arbitro</label><input type="text" id="arbitro" placeholder="Sig..."></div>
+      <div><label>Assistente 1</label><input type="text" id="ass1" placeholder="Sig..."></div>
+      <div><label>Assistente 2</label><input type="text" id="ass2" placeholder="Sig..."></div>
+    </div>
     <div style="margin-top:8px;"><label>Link Logo Casa (.png/.jpg/.webp)</label><input type="text" id="logoCasa"></div>
     <div style="margin-top:8px;"><label>Link Logo Ospite (.png/.jpg/.webp)</label><input type="text" id="logoOspite"></div>
   </div>
@@ -211,14 +236,14 @@
   <!-- FORMAZIONI -->
   <div class="card">
     <h2>👕 Formazioni (Numero - Cognome Nome)</h2>
-    <p style="font-size:11px;color:#64748b;margin-bottom:8px;">Scrivi un giocatore per riga: <b>23 - Nobile Tommaso</b> (puoi aggiungere ⚽ 🟨 🟥 🔄 alla fine).</p>
+    <p style="font-size:11px;color:#64748b;margin-bottom:8px;">Un giocatore per riga: <b>23 - Nobile Tommaso</b>. Le icone ⚽ 🟨 🟥 🔄 si aggiungono da sole quando registri gli eventi!</p>
     <div class="grid2">
-      <div><label>Titolari Casa</label><textarea id="fCasaTit" style="min-height:190px;font-size:12px;"></textarea></div>
-      <div><label>Titolari Ospite</label><textarea id="fOspTit" style="min-height:190px;font-size:12px;"></textarea></div>
+      <div><label>Titolari Casa</label><textarea id="fCasaTit" onchange="syncTextToPlayers()" style="min-height:190px;font-size:12px;"></textarea></div>
+      <div><label>Titolari Ospite</label><textarea id="fOspTit" onchange="syncTextToPlayers()" style="min-height:190px;font-size:12px;"></textarea></div>
     </div>
     <div class="grid2" style="margin-top:8px;">
-      <div><label>Panchina Casa</label><textarea id="fCasaPan" style="min-height:140px;font-size:12px;"></textarea></div>
-      <div><label>Panchina Ospite</label><textarea id="fOspPan" style="min-height:140px;font-size:12px;"></textarea></div>
+      <div><label>Panchina Casa</label><textarea id="fCasaPan" onchange="syncTextToPlayers()" style="min-height:140px;font-size:12px;"></textarea></div>
+      <div><label>Panchina Ospite</label><textarea id="fOspPan" onchange="syncTextToPlayers()" style="min-height:140px;font-size:12px;"></textarea></div>
     </div>
     <button class="btn gray" style="margin-top:12px;" onclick="resetMatch()">🧹 Azzera Eventi e Cronaca (Nuova Partita)</button>
   </div>
@@ -271,7 +296,20 @@ function updatePreviewBadge(){
   p.innerText = m ? `${matchData.stato} (${m})` : matchData.stato;
 }
 
-function onPhaseChange(){ phaseChanged = true; }
+function onPhaseChange(){
+  phaseChanged = true;
+  const st = document.getElementById('stato').value;
+  if(st === '2° TEMPO') document.getElementById('evTempo').value = '2';
+  if(st === '1° TEMPO') document.getElementById('evTempo').value = '1';
+}
+
+function setRec(val){
+  matchData.recupero = val;
+  document.querySelectorAll('.rec-btn').forEach(b=>{
+    b.classList.toggle('active', (val==='' && b.innerText==='Nessuno') || b.innerText===`+${val}'`);
+  });
+  showToast(val ? `Recupero +${val}' impostato` : "Recupero rimosso");
+}
 
 function playersToText(arr){
   return (arr||[]).map(p=>`${p.num} - ${p.nome}${p.badge?' '+p.badge:''}`).join('\n');
@@ -290,6 +328,51 @@ function textToPlayers(txt){
   });
 }
 
+function syncTextToPlayers(){
+  matchData.formazioni.casaTitolari = textToPlayers(document.getElementById('fCasaTit').value);
+  matchData.formazioni.ospiteTitolari = textToPlayers(document.getElementById('fOspTit').value);
+  matchData.formazioni.casaPanchina = textToPlayers(document.getElementById('fCasaPan').value);
+  matchData.formazioni.ospitePanchina = textToPlayers(document.getElementById('fOspPan').value);
+  refreshPlayerDropdowns();
+}
+
+function refreshPlayerDropdowns(){
+  if(!matchData) return;
+  const team = document.getElementById('evSquadra').value;
+  const tit = team === 'casa' ? matchData.formazioni.casaTitolari : matchData.formazioni.ospiteTitolari;
+  const pan = team === 'casa' ? matchData.formazioni.casaPanchina : matchData.formazioni.ospitePanchina;
+  const all = [...(tit||[]), ...(pan||[])];
+
+  const sel = document.getElementById('evPlayerSelect');
+  sel.innerHTML = `<option value="">-- Scegli o scrivi sotto --</option>` + 
+    all.map(p => `<option value="${p.nome}">${p.num} - ${p.nome}</option>`).join('');
+
+  const dl = document.getElementById('extraPlayersList');
+  dl.innerHTML = all.map(p => `<option value="(${p.nome})">`).join('') + 
+    all.map(p => `<option value="esce ${p.nome}">`).join('');
+}
+
+function onSelectPlayer(){
+  const val = document.getElementById('evPlayerSelect').value;
+  if(val) document.getElementById('evTesto').value = val;
+}
+
+function addBadgeToPlayer(team, playerName, badgeIcon){
+  if(!playerName) return;
+  const keys = team === 'casa' ? ['casaTitolari','casaPanchina'] : ['ospiteTitolari','ospitePanchina'];
+  keys.forEach(k => {
+    (matchData.formazioni[k] || []).forEach(p => {
+      if(p.nome.toLowerCase().includes(playerName.toLowerCase()) || playerName.toLowerCase().includes(p.nome.toLowerCase())){
+        if(!p.badge.includes(badgeIcon)) p.badge = (p.badge + badgeIcon).trim();
+      }
+    });
+  });
+  document.getElementById('fCasaTit').value = playersToText(matchData.formazioni.casaTitolari);
+  document.getElementById('fOspTit').value = playersToText(matchData.formazioni.ospiteTitolari);
+  document.getElementById('fCasaPan').value = playersToText(matchData.formazioni.casaPanchina);
+  document.getElementById('fOspPan').value = playersToText(matchData.formazioni.ospitePanchina);
+}
+
 async function init(){
   const savedToken = localStorage.getItem('mf_gh_token');
   if(savedToken){
@@ -299,15 +382,39 @@ async function init(){
   const res = await fetch(RAW_URL + "?t=" + Date.now());
   matchData = await res.json();
 
-  // Normalizza alle 3 statistiche richieste
   const oldStats = matchData.statistiche || [];
   matchData.statistiche = DEFAULT_STATS.map(def => {
     const found = oldStats.find(s => s.label.toLowerCase() === def.label.toLowerCase());
     return found ? found : { ...def };
   });
+  if(!matchData.infoGara) matchData.infoGara = { arbitro: "", ass1: "", ass2: "" };
 
   renderForm();
   setInterval(updatePreviewBadge, 5000);
+}
+
+function renderStats(){
+  document.getElementById('boxStatistiche').innerHTML = matchData.statistiche.map((s,i)=>`
+    <div class="stat-row">
+      <div class="stat-ctrl">
+        <button class="btn-sm minus" onclick="chgStat(${i},'casa',-1)">-</button>
+        <span class="stat-val">${s.casa}</span>
+        <button class="btn-sm" onclick="chgStat(${i},'casa',1)">+</button>
+      </div>
+      <span>${s.label}</span>
+      <div class="stat-ctrl">
+        <button class="btn-sm minus" onclick="chgStat(${i},'ospite',-1)">-</button>
+        <span class="stat-val">${s.ospite}</span>
+        <button class="btn-sm" onclick="chgStat(${i},'ospite',1)">+</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function chgStat(idx, side, delta){
+  const cur = parseInt(matchData.statistiche[idx][side]) || 0;
+  matchData.statistiche[idx][side] = String(Math.max(0, cur + delta));
+  renderStats();
 }
 
 function renderForm(){
@@ -325,22 +432,20 @@ function renderForm(){
   document.getElementById('golOspite').innerText = matchData.ospite.gol || 0;
   document.getElementById('allCasa').value = matchData.casa.allenatore || '';
   document.getElementById('allOspite').value = matchData.ospite.allenatore || '';
+  document.getElementById('arbitro').value = matchData.infoGara.arbitro || '';
+  document.getElementById('ass1').value = matchData.infoGara.ass1 || '';
+  document.getElementById('ass2').value = matchData.infoGara.ass2 || '';
   document.getElementById('logoCasa').value = matchData.casa.logo || '';
   document.getElementById('logoOspite').value = matchData.ospite.logo || '';
 
-  document.getElementById('boxStatistiche').innerHTML = matchData.statistiche.map((s,i)=>`
-    <div class="stat-row">
-      <input type="text" id="stC_${i}" value="${s.casa}">
-      <span>${s.label}</span>
-      <input type="text" id="stO_${i}" value="${s.ospite}">
-    </div>
-  `).join('');
+  renderStats();
 
   document.getElementById('fCasaTit').value = playersToText(matchData.formazioni.casaTitolari);
   document.getElementById('fOspTit').value = playersToText(matchData.formazioni.ospiteTitolari);
   document.getElementById('fCasaPan').value = playersToText(matchData.formazioni.casaPanchina);
   document.getElementById('fOspPan').value = playersToText(matchData.formazioni.ospitePanchina);
 
+  refreshPlayerDropdowns();
   renderLists();
   updatePreviewBadge();
 }
@@ -390,20 +495,53 @@ function addEvento(){
   const min = document.getElementById('evMin').value.trim() || getCurrentAutoMin() || "1'";
   const squadra = document.getElementById('evSquadra').value;
   const tipo = document.getElementById('evTipo').value;
-  const score = document.getElementById('evScore').value.trim();
   const testo = document.getElementById('evTesto').value.trim();
   const extra = document.getElementById('evExtra').value.trim();
-  if(!testo) return alert("Scrivi il nome del giocatore!");
+  if(!testo) return alert("Seleziona o scrivi il giocatore!");
+
+  let score = "";
+  if (tipo === 'gol' || tipo === 'autogol') {
+    chgGol(squadra, 1);
+    score = `${matchData.casa.gol} - ${matchData.ospite.gol}`;
+  }
+
+  // Aggiorna icona nella formazione
+  const badgeMap = { gol: '⚽', giallo: '🟨', rosso: '🟥', cambio: '🔄' };
+  if (badgeMap[tipo]) {
+    addBadgeToPlayer(squadra, testo, badgeMap[tipo]);
+  }
+
   matchData.riassunto.push({ tempo, min, squadra, tipo, score, testo, extra });
-  document.getElementById('evScore').value = '';
   document.getElementById('evTesto').value = '';
   document.getElementById('evExtra').value = '';
   document.getElementById('evMin').value = '';
+  document.getElementById('evPlayerSelect').value = '';
   renderLists();
-  showToast("Evento aggiunto! Premi PUBBLICA");
+  showToast("Evento e Formazione aggiornati! Premi PUBBLICA");
 }
 
 function delEv(i){ matchData.riassunto.splice(i,1); renderLists(); }
+
+function copySocialPost(){
+  if(!matchData) return;
+  const c = matchData.casa;
+  const o = matchData.ospite;
+  const st = matchData.stato === 'FINALE' ? 'FINALE' : (getCurrentAutoMin() || matchData.stato);
+  const golList = matchData.riassunto
+    .filter(e => e.tipo === 'gol' || e.tipo === 'autogol')
+    .map(e => `⚽ ${e.min} ${e.testo}${e.tipo==='autogol'?' (Aut.)':''}`)
+    .join('\n');
+
+  const txt = `🔵⚪ ${c.nome.toUpperCase()} ${c.gol} - ${o.gol} ${o.nome.toUpperCase()} (${st})\n` +
+              (golList ? `\n${golList}\n` : '') +
+              `\n📲 Segui la diretta testuale e le statistiche live:\nhttps://botaniqa2025.github.io/manfredonia-live/`;
+
+  navigator.clipboard.writeText(txt).then(() => {
+    showToast("📋 Testo copiato! Incollalo sui social");
+  }).catch(() => {
+    prompt("Copia questo testo:", txt);
+  });
+}
 
 function resetMatch(){
   if(!confirm("Vuoi cancellare tutti i gol, gli eventi e la cronaca della partita precedente?")) return;
@@ -411,6 +549,7 @@ function resetMatch(){
   matchData.commento = [];
   matchData.casa.gol = 0;
   matchData.ospite.gol = 0;
+  matchData.recupero = "";
   matchData.statistiche = DEFAULT_STATS.map(s => ({...s}));
   matchData.stato = "PRE-PARTITA";
   matchData.timerStart = null;
@@ -452,14 +591,17 @@ async function saveToGitHub(){
   matchData.ospite.nome = document.getElementById('nomeOspite').value.trim();
   matchData.casa.allenatore = document.getElementById('allCasa').value.trim();
   matchData.ospite.allenatore = document.getElementById('allOspite').value.trim();
+  matchData.infoGara = {
+    arbitro: document.getElementById('arbitro').value.trim(),
+    ass1: document.getElementById('ass1').value.trim(),
+    ass2: document.getElementById('ass2').value.trim()
+  };
   matchData.casa.logo = document.getElementById('logoCasa').value.trim();
   matchData.ospite.logo = document.getElementById('logoOspite').value.trim();
 
-  matchData.statistiche.forEach((s,i)=>{
-    s.casa = document.getElementById(`stC_${i}`).value.trim();
-    s.ospite = document.getElementById(`stO_${i}`).value.trim();
-    const nC = parseFloat(s.casa.replace('%','')) || 0;
-    const nO = parseFloat(s.ospite.replace('%','')) || 0;
+  matchData.statistiche.forEach((s)=>{
+    const nC = parseFloat(s.casa) || 0;
+    const nO = parseFloat(s.ospite) || 0;
     s.percCasa = (nC + nO) > 0 ? Math.round((nC / (nC + nO)) * 100) : 50;
   });
 
@@ -486,7 +628,7 @@ async function saveToGitHub(){
     });
     if(!res.ok) throw new Error("Errore Token o rete");
     updatePreviewBadge();
-    showToast("✅ ONLINE! Sito aggiornato!");
+    showToast("✅ ONLINE! Tutto aggiornato!");
   }catch(e){
     alert("Errore durante il salvataggio: controlla il Token GitHub.");
   }finally{

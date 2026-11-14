@@ -21,6 +21,7 @@
   .score { font-size: 36px; font-weight: 800; letter-spacing: 2px; }
   .status { display: inline-block; margin-top: 4px; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; background: #e60026; color: #fff; }
   .status.final { background: rgba(255,255,255,0.2); }
+  .rec-tag { display: block; font-size: 10px; opacity: 0.85; margin-top: 3px; font-weight: 600; }
 
   .tabs { display: flex; border-bottom: 1px solid #e5e7eb; background: #fff; overflow-x: auto; }
   .tab-btn { flex: 1; padding: 12px 6px; border: none; background: none; font-size: 12px; font-weight: 700; color: #6b7280; cursor: pointer; border-bottom: 3px solid transparent; transition: 0.2s; white-space: nowrap; }
@@ -31,7 +32,6 @@
 
   .half-bar { background: #f1f5f9; padding: 6px 10px; font-size: 11px; font-weight: 700; color: #475569; border-radius: 6px; margin: 10px 0 6px; text-transform: uppercase; letter-spacing: 0.5px; }
   
-  /* Righe Riassunto con rettangolo arrotondato */
   .event-row { display: flex; align-items: center; padding: 8px 4px; border-bottom: 1px solid #f1f5f9; font-size: 13px; gap: 8px; }
   .event-row.ospite { flex-direction: row-reverse; text-align: right; }
   .ev-min { font-weight: 700; color: #64748b; min-width: 30px; font-size: 12px; }
@@ -55,6 +55,11 @@
   .p-fullname { font-weight: 600; color: #1e293b; flex: 1; line-height: 1.25; }
   .p-badge { font-size: 12px; }
   .coaches-box { display: flex; justify-content: space-between; padding: 8px 6px; background: #f8fafc; border-radius: 8px; font-size: 12.5px; font-weight: 700; color: #1e293b; margin-top: 6px; }
+  .ref-box { background: #f8fafc; border-radius: 8px; padding: 8px 10px; margin-top: 6px; font-size: 12px; color: #334155; display: flex; flex-direction: column; gap: 5px; }
+  .ref-row { display: flex; justify-content: space-between; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; }
+  .ref-row:last-child { border-bottom: none; padding-bottom: 0; }
+  .ref-lbl { color: #64748b; font-weight: 600; }
+  .ref-val { font-weight: 700; color: #0f172a; }
 
   .comm-item { padding: 10px 0; border-bottom: 1px solid #f1f5f9; }
   .comm-head { display: flex; align-items: center; gap: 6px; font-weight: 800; font-size: 12px; color: #005596; margin-bottom: 4px; }
@@ -78,6 +83,7 @@
       <div class="score-box">
         <div class="score" id="risultato">0 - 0</div>
         <div class="status" id="statoBadge">LIVE</div>
+        <span class="rec-tag" id="recTag"></span>
       </div>
       <div class="team">
         <img id="logoOspite" src="" alt="Ospite">
@@ -138,15 +144,19 @@
   function updateClock() {
     if (!currentData) return;
     const badge = document.getElementById('statoBadge');
+    const recTag = document.getElementById('recTag');
     const st = currentData.stato;
 
     if (st === 'FINALE' || st === 'INTERVALLO' || st === 'PRE-PARTITA') {
       badge.innerText = st;
       badge.className = 'status final';
+      recTag.innerText = '';
       return;
     }
 
     badge.className = 'status';
+    recTag.innerText = currentData.recupero ? `Recupero: +${currentData.recupero}'` : '';
+
     if (currentData.timerStart) {
       const elapsed = Math.floor((Date.now() - currentData.timerStart) / 60000);
       const base = currentData.timerBase || 1;
@@ -211,6 +221,9 @@
         </div>
       `).join('');
 
+      const info = data.infoGara || {};
+      const hasInfo = info.arbitro || info.ass1 || info.ass2;
+
       document.getElementById('formazioni').innerHTML = `
         <div class="lineup-teams-head">
           <span>${data.casa.nome}</span>
@@ -231,6 +244,14 @@
           <div class="coaches-box">
             <span>${data.casa.allenatore || '-'}</span>
             <span>${data.ospite.allenatore || '-'}</span>
+          </div>
+        ` : ''}
+        ${hasInfo ? `
+          <div class="half-bar" style="margin-top:16px;">Info Gara & Arbitri</div>
+          <div class="ref-box">
+            ${info.arbitro ? `<div class="ref-row"><span class="ref-lbl">Arbitro</span><span class="ref-val">${info.arbitro}</span></div>` : ''}
+            ${info.ass1 ? `<div class="ref-row"><span class="ref-lbl">Assistente 1</span><span class="ref-val">${info.ass1}</span></div>` : ''}
+            ${info.ass2 ? `<div class="ref-row"><span class="ref-lbl">Assistente 2</span><span class="ref-val">${info.ass2}</span></div>` : ''}
           </div>
         ` : ''}
       `;

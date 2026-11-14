@@ -10,8 +10,9 @@
   .card { max-width: 600px; margin: 0 auto; background: #fff; border-radius: 14px; overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,0.08); border: 1px solid #e5e7eb; }
   
   .header { background: linear-gradient(135deg, #003366 0%, #0066b2 100%); color: #fff; padding: 16px; text-align: center; }
-  .comp { font-size: 11px; letter-spacing: 1px; opacity: 0.85; font-weight: 700; margin-bottom: 4px; }
-  .date { font-size: 11px; opacity: 0.75; margin-bottom: 12px; }
+  .comp { font-size: 11px; letter-spacing: 1px; opacity: 0.9; font-weight: 700; margin-bottom: 3px; }
+  .date { font-size: 11px; opacity: 0.8; margin-bottom: 2px; }
+  .venue { font-size: 11px; opacity: 0.85; margin-bottom: 12px; font-weight: 500; }
   .scoreboard { display: flex; align-items: center; justify-content: space-between; }
   .team { width: 34%; display: flex; flex-direction: column; align-items: center; gap: 6px; }
   .team img { width: 52px; height: 52px; object-fit: contain; background: #fff; border-radius: 50%; padding: 4px; }
@@ -29,19 +30,22 @@
   .tab-content.active { display: block; }
 
   .half-bar { background: #f1f5f9; padding: 6px 10px; font-size: 11px; font-weight: 700; color: #475569; border-radius: 6px; margin: 10px 0 6px; text-transform: uppercase; letter-spacing: 0.5px; }
-  .event-row { display: flex; align-items: center; padding: 8px 4px; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
+  
+  /* Righe Riassunto con rettangolo arrotondato */
+  .event-row { display: flex; align-items: center; padding: 8px 4px; border-bottom: 1px solid #f1f5f9; font-size: 13px; gap: 8px; }
   .event-row.ospite { flex-direction: row-reverse; text-align: right; }
-  .ev-min { font-weight: 700; color: #64748b; width: 36px; font-size: 12px; }
-  .ev-icon { margin: 0 8px; font-size: 15px; }
-  .ev-text { font-weight: 700; }
-  .ev-extra { color: #64748b; font-weight: 400; margin-left: 4px; font-size: 12px; }
+  .ev-min { font-weight: 700; color: #64748b; min-width: 30px; font-size: 12px; }
+  .ev-pill { display: inline-flex; align-items: center; justify-content: center; gap: 5px; padding: 4px 9px; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; font-weight: 800; font-size: 12.5px; color: #0f172a; box-shadow: 0 1px 2px rgba(0,0,0,0.03); }
+  .ev-pill.autogol { border-color: #fecaca; background: #fef2f2; color: #b91c1c; }
+  .ev-text { font-weight: 700; color: #0f172a; }
+  .ev-extra { color: #64748b; font-weight: 400; font-size: 12px; }
 
   .stat-item { margin-bottom: 14px; }
   .stat-labels { display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; margin-bottom: 4px; }
   .stat-bar-bg { height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; display: flex; }
   .stat-bar-fill { background: #0066b2; height: 100%; transition: width 0.4s; }
 
-  .lineup-teams-head { display: flex; justify-content: space-between; font-size: 12px; font-weight: 800; color: #003366; padding: 0 4px 6px; border-bottom: 2px solid #005596; }
+  .lineup-teams-head { display: flex; justify-content: space-between; font-size: 12.5px; font-weight: 800; color: #003366; padding: 0 4px 6px; border-bottom: 2px solid #005596; }
   .lineup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 6px; }
   .lineup-col { display: flex; flex-direction: column; }
   .player-row { display: flex; align-items: center; padding: 7px 4px; border-bottom: 1px solid #f1f5f9; font-size: 12.5px; gap: 7px; }
@@ -50,10 +54,12 @@
   .player-row.ospite .p-num { background: #f1f5f9; color: #334155; }
   .p-fullname { font-weight: 600; color: #1e293b; flex: 1; line-height: 1.25; }
   .p-badge { font-size: 12px; }
+  .coaches-box { display: flex; justify-content: space-between; padding: 8px 6px; background: #f8fafc; border-radius: 8px; font-size: 12.5px; font-weight: 700; color: #1e293b; margin-top: 6px; }
 
   .comm-item { padding: 10px 0; border-bottom: 1px solid #f1f5f9; }
   .comm-head { display: flex; align-items: center; gap: 6px; font-weight: 800; font-size: 12px; color: #005596; margin-bottom: 4px; }
   .comm-body { font-size: 13px; line-height: 1.45; color: #334155; }
+  .comm-note { background: #f8fafc; border-left: 3px solid #005596; padding: 10px 12px; border-radius: 6px; margin: 8px 0; font-size: 13px; line-height: 1.45; color: #1e293b; }
   .sync-note { text-align: center; font-size: 10px; color: #94a3b8; padding: 8px; background: #f8fafc; }
 </style>
 </head>
@@ -63,6 +69,7 @@
   <div class="header">
     <div class="comp" id="comp">SERIE D</div>
     <div class="date" id="dateOra">Caricamento...</div>
+    <div class="venue" id="stadioCitta"></div>
     <div class="scoreboard">
       <div class="team">
         <img id="logoCasa" src="" alt="Casa">
@@ -105,16 +112,21 @@
     btn.classList.add('active');
   }
 
-  function getIcon(tipo) {
-    if (tipo === 'gol') return '⚽';
-    if (tipo === 'giallo') return '🟨';
-    if (tipo === 'rosso') return '🟥';
-    if (tipo === 'cambio') return '🔄';
-    return '•';
+  function renderPill(e) {
+    if (e.tipo === 'gol') {
+      return `<span class="ev-pill">⚽${e.score ? ` <span>${e.score}</span>` : ''}</span>`;
+    }
+    if (e.tipo === 'autogol') {
+      return `<span class="ev-pill autogol">⚽${e.score ? ` <span>${e.score}</span>` : ''} <small>(Aut.)</small></span>`;
+    }
+    if (e.tipo === 'giallo') return `<span class="ev-pill">🟨</span>`;
+    if (e.tipo === 'rosso') return `<span class="ev-pill">🟥</span>`;
+    if (e.tipo === 'cambio') return `<span class="ev-pill">🔄</span>`;
+    return `<span class="ev-pill">•</span>`;
   }
 
   function renderPlayerList(list, isOspite) {
-    return list.map(p => `
+    return (list || []).map(p => `
       <div class="player-row ${isOspite ? 'ospite' : ''}">
         <span class="p-num">${p.num}</span>
         <span class="p-fullname">${p.nome}</span>
@@ -156,8 +168,11 @@
       const data = await res.json();
       currentData = data;
 
-      document.getElementById('comp').innerText = data.competizione;
-      document.getElementById('dateOra').innerText = data.dataOra;
+      document.getElementById('comp').innerText = data.competizione || '';
+      document.getElementById('dateOra').innerText = data.dataOra || '';
+      const venueParts = [data.stadio, data.citta].filter(Boolean);
+      document.getElementById('stadioCitta').innerText = venueParts.length ? `📍 ${venueParts.join(' - ')}` : '';
+      
       document.getElementById('nomeCasa').innerText = data.casa.nome;
       document.getElementById('logoCasa').src = data.casa.logo;
       document.getElementById('nomeOspite').innerText = data.ospite.nome;
@@ -171,9 +186,9 @@
       const renderEvents = list => list.map(e => `
         <div class="event-row ${e.squadra}">
           <span class="ev-min">${e.min}</span>
-          <span class="ev-icon">${getIcon(e.tipo)}</span>
+          ${renderPill(e)}
           <span class="ev-text">${e.testo}</span>
-          <span class="ev-extra">${e.extra}</span>
+          ${e.extra ? `<span class="ev-extra">${e.extra}</span>` : ''}
         </div>
       `).join('');
       
@@ -198,8 +213,8 @@
 
       document.getElementById('formazioni').innerHTML = `
         <div class="lineup-teams-head">
-          <span>${data.casa.nome} (${data.casa.modulo})</span>
-          <span>${data.ospite.nome} (${data.ospite.modulo})</span>
+          <span>${data.casa.nome}</span>
+          <span>${data.ospite.nome}</span>
         </div>
         <div class="half-bar">Titolari</div>
         <div class="lineup-grid">
@@ -211,14 +226,26 @@
           <div class="lineup-col">${renderPlayerList(data.formazioni.casaPanchina, false)}</div>
           <div class="lineup-col">${renderPlayerList(data.formazioni.ospitePanchina, true)}</div>
         </div>
+        ${(data.casa.allenatore || data.ospite.allenatore) ? `
+          <div class="half-bar" style="margin-top:16px;">Allenatori</div>
+          <div class="coaches-box">
+            <span>${data.casa.allenatore || '-'}</span>
+            <span>${data.ospite.allenatore || '-'}</span>
+          </div>
+        ` : ''}
       `;
 
-      document.getElementById('commento').innerHTML = data.commento.map(c => `
-        <div class="comm-item">
-          <div class="comm-head"><span>${c.min}</span> <span>${c.icona}</span></div>
-          <div class="comm-body">${c.testo}</div>
-        </div>
-      `).join('');
+      document.getElementById('commento').innerHTML = data.commento.map(c => {
+        if (c.isNota || !c.icona) {
+          return `<div class="comm-note">${c.testo}</div>`;
+        }
+        return `
+          <div class="comm-item">
+            <div class="comm-head"><span>${c.min}</span> <span>${c.icona}</span></div>
+            <div class="comm-body">${c.testo}</div>
+          </div>
+        `;
+      }).join('');
 
       const now = new Date();
       document.getElementById('syncStatus').innerText = `Ultimo sync: ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;

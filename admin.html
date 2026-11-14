@@ -754,12 +754,12 @@ function addEvento(){
     if (tipo === 'giallo') {
       matchData.commento.unshift({ isNota: false, min, icona: '🟨', testo: `Ammonito ${testo} (${teamName}).`, saliente: false, isGol: false, score: '' });
     } else if (tipo === 'rosso') {
-      matchData.commento.unshift({ isNota: false, min, icona: '🟥', testo: `Espulso ${testo} (${teamName}).`, saliente: true, isGol: false, score: '' });
+      matchData.commento.unshift({ isNota: false, min, icona: '🟥', testo: `Espulso ${testo} (${teamName}).`, saliente: false, isGol: false, score: '' });
     } else if (tipo === 'cambio') {
       const fraseCambio = cleanOut
         ? `Sostituzione ${teamName}: esce ${cleanOut} ed entra ${testo}.`
         : `Sostituzione ${teamName}: entra ${testo}.`;
-      matchData.commento.unshift({ isNota: false, min, icona: '🔄', testo: fraseCambio, saliente: true, isGol: false, score: '' });
+      matchData.commento.unshift({ isNota: false, min, icona: '🔄', testo: fraseCambio, saliente: false, isGol: false, score: '' });
     } else if (tipo === 'gol') {
       const fraseGol = extra
         ? `GOOOL! Rete di ${testo} (${teamName}) ${extra}!`

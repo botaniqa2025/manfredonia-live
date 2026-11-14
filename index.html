@@ -131,38 +131,41 @@
   .comm-note:last-child { border-bottom: none; }
   .comm-note.saliente { font-weight: 700; color: #0f172a; }
 
-  /* Footer Pulito Manfredonia Calcio 1932 + Credits */
+  /* Footer con lo stesso identico stile dell'Header */
   .club-footer {
-    background: #f8fafc;
-    border-top: 1px solid #e2e8f0;
+    background:
+      repeating-linear-gradient(-45deg, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 6px, transparent 6px, transparent 14px),
+      linear-gradient(135deg, #002244 0%, #004c99 55%, #0077cc 100%);
+    color: #fff;
     padding: 16px 12px 12px;
     text-align: center;
   }
-  .footer-brand { font-size: 13px; font-weight: 800; color: #003366; margin-bottom: 10px; letter-spacing: 0.3px; }
+  .footer-brand { font-size: 13px; font-weight: 800; color: #fff; margin-bottom: 10px; letter-spacing: 0.4px; text-shadow: 0 1px 2px rgba(0,0,0,0.25); }
   .footer-links { display: flex; justify-content: center; flex-wrap: wrap; gap: 7px; margin-bottom: 12px; }
   .footer-links a {
-    color: #004c99; text-decoration: none; font-size: 11.5px; font-weight: 700;
-    background: #fff; padding: 6px 11px; border-radius: 20px;
-    border: 1px solid #cbd5e1; box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    color: #fff; text-decoration: none; font-size: 11.5px; font-weight: 700;
+    background: rgba(255,255,255,0.14); padding: 6px 12px; border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.22);
     transition: 0.2s;
   }
-  .footer-links a:hover { background: #e0f2fe; border-color: #7dd3fc; }
+  .footer-links a:hover { background: rgba(255,255,255,0.26); }
   .footer-credits {
-    border-top: 1px solid #e2e8f0;
+    border-top: 1px solid rgba(255,255,255,0.16);
     padding-top: 10px;
     margin-bottom: 6px;
     font-size: 11.5px;
-    color: #475569;
-    font-weight: 600;
+    color: #e0f2fe;
+    font-weight: 500;
   }
-  .footer-credits strong { color: #0f172a; }
-  .credit-links { display: inline-flex; gap: 8px; margin-left: 6px; }
+  .footer-credits strong { color: #fff; font-weight: 800; }
+  .credit-links { display: inline-flex; gap: 6px; margin-left: 6px; }
   .credit-links a {
-    color: #005596; text-decoration: none; font-weight: 700;
-    background: #e0f2fe; padding: 2px 8px; border-radius: 10px; font-size: 11px;
+    color: #fff; text-decoration: none; font-weight: 700;
+    background: rgba(255,255,255,0.16); padding: 2px 9px; border-radius: 10px; font-size: 11px;
+    border: 1px solid rgba(255,255,255,0.2);
   }
-  .credit-links a:hover { background: #bae6fd; }
-  .sync-note { font-size: 10px; color: #94a3b8; margin-top: 4px; }
+  .credit-links a:hover { background: rgba(255,255,255,0.28); }
+  .sync-note { font-size: 10px; color: #bae6fd; opacity: 0.85; margin-top: 4px; }
 </style>
 </head>
 <body>

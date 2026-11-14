@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manfredonia Calcio - Live Match</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  body { background: transparent; color: #1a1a1a; padding: 6px; }
+  .card { max-width: 600px; margin: 0 auto; background: #fff; border-radius: 14px; overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,0.08); border: 1px solid #e5e7eb; }
+  
+  .header { background: linear-gradient(135deg, #003366 0%, #0066b2 100%); color: #fff; padding: 16px; text-align: center; }
+  .comp { font-size: 11px; letter-spacing: 1px; opacity: 0.85; font-weight: 700; margin-bottom: 4px; }
+  .date { font-size: 11px; opacity: 0.75; margin-bottom: 12px; }
+  .scoreboard { display: flex; align-items: center; justify-content: space-between; }
+  .team { width: 34%; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .team img { width: 52px; height: 52px; object-fit: contain; background: #fff; border-radius: 50%; padding: 4px; }
+  .team-name { font-size: 14px; font-weight: 700; line-height: 1.2; }
+  .score-box { width: 32%; }
+  .score { font-size: 36px; font-weight: 800; letter-spacing: 2px; }
+  .status { display: inline-block; margin-top: 4px; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; background: #e60026; color: #fff; }
+  .status.final { background: rgba(255,255,255,0.2); }
+
+  .tabs { display: flex; border-bottom: 1px solid #e5e7eb; background: #fff; overflow-x: auto; }
+  .tab-btn { flex: 1; padding: 12px 6px; border: none; background: none; font-size: 12px; font-weight: 700; color: #6b7280; cursor: pointer; border-bottom: 3px solid transparent; transition: 0.2s; white-space: nowrap; }
+  .tab-btn.active { color: #005596; border-bottom-color: #005596; }
+
+  .tab-content { display: none; padding: 14px; }
+  .tab-content.active { display: block; }
+
+  .half-bar { background: #f1f5f9; padding: 6px 10px; font-size: 11px; font-weight: 700; color: #475569; border-radius: 6px; margin: 10px 0 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .event-row { display: flex; align-items: center; padding: 8px 4px; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
+  .event-row.ospite { flex-direction: row-reverse; text-align: right; }
+  .ev-min { font-weight: 700; color: #64748b; width: 36px; font-size: 12px; }
+  .ev-icon { margin: 0 8px; font-size: 15px; }
+  .ev-text { font-weight: 700; }
+  .ev-extra { color: #64748b; font-weight: 400; margin-left: 4px; font-size: 12px; }
+
+  .stat-item { margin-bottom: 14px; }
+  .stat-labels { display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; margin-bottom: 4px; }
+  .stat-bar-bg { height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; display: flex; }
+  .stat-bar-fill { background: #0066b2; height: 100%; transition: width 0.4s; }
+
+  .lineup-teams-head { display: flex; justify-content: space-between; font-size: 12px; font-weight: 800; color: #003366; padding: 0 4px 6px; border-bottom: 2px solid #005596; }
+  .lineup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 6px; }
+  .lineup-col { display: flex; flex-direction: column; }
+  .player-row { display: flex; align-items: center; padding: 7px 4px; border-bottom: 1px solid #f1f5f9; font-size: 12.5px; gap: 7px; }
+  .player-row.ospite { flex-direction: row-reverse; text-align: right; }
+  .p-num { display: inline-flex; align-items: center; justify-content: center; min-width: 24px; height: 22px; padding: 0 4px; border-radius: 5px; background: #e0f2fe; color: #0369a1; font-weight: 800; font-size: 11px; }
+  .player-row.ospite .p-num { background: #f1f5f9; color: #334155; }
+  .p-fullname { font-weight: 600; color: #1e293b; flex: 1; line-height: 1.25; }
+  .p-badge { font-size: 12px; }
+
+  .comm-item { padding: 10px 0; border-bottom: 1px solid #f1f5f9; }
+  .comm-head { display: flex; align-items: center; gap: 6px; font-weight: 800; font-size: 12px; color: #005596; margin-bottom: 4px; }
+  .comm-body { font-size: 13px; line-height: 1.45; color: #334155; }
+  .sync-note { text-align: center; font-size: 10px; color: #94a3b8; padding: 8px; background: #f8fafc; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="header">
+    <div class="comp" id="comp">SERIE D</div>
+    <div class="date" id="dateOra">Caricamento...</div>
+    <div class="scoreboard">
+      <div class="team">
+        <img id="logoCasa" src="" alt="Casa">
+        <div class="team-name" id="nomeCasa">Manfredonia</div>
+      </div>
+      <div class="score-box">
+        <div class="score" id="risultato">0 - 0</div>
+        <div class="status" id="statoBadge">LIVE</div>
+      </div>
+      <div class="team">
+        <img id="logoOspite" src="" alt="Ospite">
+        <div class="team-name" id="nomeOspite">Avversario</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="openTab('riassunto', this)">RIASSUNTO</button>
+    <button class="tab-btn" onclick="openTab('statistiche', this)">STATISTICHE</button>
+    <button class="tab-btn" onclick="openTab('formazioni', this)">FORMAZIONI</button>
+    <button class="tab-btn" onclick="openTab('commento', this)">COMMENTO</button>
+  </div>
+
+  <div id="riassunto" class="tab-content active"></div>
+  <div id="statistiche" class="tab-content"></div>
+  <div id="formazioni" class="tab-content"></div>
+  <div id="commento" class="tab-content"></div>
+
+  <div class="sync-note" id="syncStatus">Aggiornamento automatico attivo</div>
+</div>
+
+<script>
+  const GIST_URL = "https://gist.githubusercontent.com/botaniqa2025/56a02aeaf74c413358c91b385c2d83d6/raw/match.json";
+
+  function openTab(tabId, btn) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    btn.classList.add('active');
+  }
+
+  function getIcon(tipo) {
+    if (tipo === 'gol') return '⚽';
+    if (tipo === 'giallo') return '🟨';
+    if (tipo === 'rosso') return '🟥';
+    if (tipo === 'cambio') return '🔄';
+    return '•';
+  }
+
+  function renderPlayerList(list, isOspite) {
+    return list.map(p => `
+      <div class="player-row ${isOspite ? 'ospite' : ''}">
+        <span class="p-num">${p.num}</span>
+        <span class="p-fullname">${p.nome}</span>
+        ${p.badge ? `<span class="p-badge">${p.badge}</span>` : ''}
+      </div>
+    `).join('');
+  }
+
+  async function loadMatchData() {
+    try {
+      const res = await fetch(GIST_URL + "?t=" + Date.now());
+      const data = await res.json();
+
+      document.getElementById('comp').innerText = data.competizione;
+      document.getElementById('dateOra').innerText = data.dataOra;
+      document.getElementById('nomeCasa').innerText = data.casa.nome;
+      document.getElementById('logoCasa').src = data.casa.logo;
+      document.getElementById('nomeOspite').innerText = data.ospite.nome;
+      document.getElementById('logoOspite').src = data.ospite.logo;
+      document.getElementById('risultato').innerText = `${data.casa.gol} - ${data.ospite.gol}`;
+      
+      const badge = document.getElementById('statoBadge');
+      badge.innerText = data.stato === 'FINALE' ? 'FINALE' : `${data.stato} ${data.minuto}`;
+      badge.className = data.stato === 'FINALE' ? 'status final' : 'status';
+
+      const t1 = data.riassunto.filter(e => e.tempo === 1);
+      const t2 = data.riassunto.filter(e => e.tempo === 2);
+      const renderEvents = list => list.map(e => `
+        <div class="event-row ${e.squadra}">
+          <span class="ev-min">${e.min}</span>
+          <span class="ev-icon">${getIcon(e.tipo)}</span>
+          <span class="ev-text">${e.testo}</span>
+          <span class="ev-extra">${e.extra}</span>
+        </div>
+      `).join('');
+      
+      document.getElementById('riassunto').innerHTML = `
+        <div class="half-bar">1° Tempo</div>
+        ${t1.length ? renderEvents(t1) : '<div style="font-size:12px;color:#94a3b8;padding:6px;">Nessun evento</div>'}
+        ${t2.length ? `<div class="half-bar">2° Tempo</div>` + renderEvents(t2) : ''}
+      `;
+
+      document.getElementById('statistiche').innerHTML = data.statistiche.map(s => `
+        <div class="stat-item">
+          <div class="stat-labels">
+            <span>${s.casa}</span>
+            <span style="color:#64748b">${s.label}</span>
+            <span>${s.ospite}</span>
+          </div>
+          <div class="stat-bar-bg">
+            <div class="stat-bar-fill" style="width:${s.percCasa}%"></div>
+          </div>
+        </div>
+      `).join('');
+
+      document.getElementById('formazioni').innerHTML = `
+        <div class="lineup-teams-head">
+          <span>${data.casa.nome} (${data.casa.modulo})</span>
+          <span>${data.ospite.nome} (${data.ospite.modulo})</span>
+        </div>
+        <div class="half-bar">Titolari</div>
+        <div class="lineup-grid">
+          <div class="lineup-col">${renderPlayerList(data.formazioni.casaTitolari, false)}</div>
+          <div class="lineup-col">${renderPlayerList(data.formazioni.ospiteTitolari, true)}</div>
+        </div>
+        <div class="half-bar" style="margin-top:16px;">In Panchina</div>
+        <div class="lineup-grid">
+          <div class="lineup-col">${renderPlayerList(data.formazioni.casaPanchina, false)}</div>
+          <div class="lineup-col">${renderPlayerList(data.formazioni.ospitePanchina, true)}</div>
+        </div>
+      `;
+
+      document.getElementById('commento').innerHTML = data.commento.map(c => `
+        <div class="comm-item">
+          <div class="comm-head"><span>${c.min}</span> <span>${c.icona}</span></div>
+          <div class="comm-body">${c.testo}</div>
+        </div>
+      `).join('');
+
+      const now = new Date();
+      document.getElementById('syncStatus').innerText = `Ultimo sync: ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
+    } catch (err) {
+      document.getElementById('syncStatus').innerText = "Errore lettura dati — controlla le virgole nel JSON";
+    }
+  }
+
+  loadMatchData();
+  setInterval(loadMatchData, 10000);
+</script>
+</body>
+</html>

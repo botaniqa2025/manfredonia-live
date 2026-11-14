@@ -131,9 +131,9 @@
     </div>
   </div>
 
-  <!-- EVENTI RIASSUNTO CON FILTRO SOSTITUZIONI -->
+  <!-- EVENTI RIASSUNTO + AUTO-COMMENTO -->
   <div class="card" id="cardEventi">
-    <h2>📋 Gol, Cartellini e Cambi (Auto-Formazioni)</h2>
+    <h2>📋 Gol, Cartellini e Cambi (Auto-Formazioni & Cronaca)</h2>
     <div class="grid3">
       <div>
         <label>Tempo</label>
@@ -442,7 +442,6 @@ function refreshPlayerDropdowns(){
     sel.innerHTML = `<option value="">-- Panchina (${pan.length}) --</option>` +
       pan.map(p => `<option value="${p.nome}">${p.num} - ${p.nome}</option>`).join('');
 
-    // Per chi esce mostra titolari + eventuali subentrati già entrati in precedenza
     const subbedIn = pan.filter(p => (p.badge || '').includes('🔄'));
     const onPitch = [...tit, ...subbedIn];
     subOutSel.innerHTML = `<option value="">-- Titolari in campo (${onPitch.length}) --</option>` +
@@ -678,7 +677,7 @@ function delComm(i){
   markDirty();
 }
 
-/* --- MODIFICA E AGGIUNTA EVENTI --- */
+/* --- MODIFICA E AGGIUNTA EVENTI + GENERAZIONE FRASI IN COMMENTO --- */
 function editEv(i){
   const e = matchData.riassunto[i];
   editEvIndex = i;
@@ -747,6 +746,29 @@ function addEvento(){
       score = `${matchData.casa.gol} - ${matchData.ospite.gol}`;
     }
     matchData.riassunto.push({ tempo, min, squadra, tipo, score, testo, extra });
+
+    // Genera in automatico anche la frase nella cronaca (Commento)
+    const teamName = (squadra === 'casa' ? matchData.casa.nome : matchData.ospite.nome) || (squadra === 'casa' ? 'Casa' : 'Ospite');
+    const cleanOut = extra.replace(/^\(esce\s+/i, '').replace(/^\(/, '').replace(/\)$/, '').trim();
+
+    if (tipo === 'giallo') {
+      matchData.commento.unshift({ isNota: false, min, icona: '🟨', testo: `Ammonito ${testo} (${teamName}).`, saliente: false, isGol: false, score: '' });
+    } else if (tipo === 'rosso') {
+      matchData.commento.unshift({ isNota: false, min, icona: '🟥', testo: `Espulso ${testo} (${teamName}).`, saliente: true, isGol: false, score: '' });
+    } else if (tipo === 'cambio') {
+      const fraseCambio = cleanOut
+        ? `Sostituzione ${teamName}: esce ${cleanOut} ed entra ${testo}.`
+        : `Sostituzione ${teamName}: entra ${testo}.`;
+      matchData.commento.unshift({ isNota: false, min, icona: '🔄', testo: fraseCambio, saliente: true, isGol: false, score: '' });
+    } else if (tipo === 'gol') {
+      const fraseGol = extra
+        ? `GOOOL! Rete di ${testo} (${teamName}) ${extra}!`
+        : `GOOOL! Rete di ${testo} (${teamName})!`;
+      matchData.commento.unshift({ isNota: false, min, icona: '🥅', testo: fraseGol, saliente: true, isGol: true, score });
+    } else if (tipo === 'autogol') {
+      matchData.commento.unshift({ isNota: false, min, icona: '🔴', testo: `Autogol di ${testo}!`, saliente: true, isGol: true, score });
+    }
+
     document.getElementById('evTesto').value = '';
     document.getElementById('evExtra').value = '';
     document.getElementById('evMin').value = '';
@@ -755,7 +777,7 @@ function addEvento(){
     refreshPlayerDropdowns();
     renderLists();
     markDirty();
-    showToast("Evento e Formazione aggiornati! Premi PUBBLICA");
+    showToast("Aggiunto a Riassunto e Commento! Premi PUBBLICA");
   }
 }
 

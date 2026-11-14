@@ -25,10 +25,16 @@
   .big-num{font-size:28px;font-weight:800;min-width:30px;text-align:center}
   .btn{padding:10px 14px;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;background:#005596;color:#fff;width:100%;margin-top:8px}
   .btn.green{background:#16a34a}
-  .btn.red{background:#dc2626;width:auto;padding:4px 8px;font-size:11px;margin:0}
+  .btn.orange{background:#d97706}
+  .btn.red{background:#dc2626;width:auto;padding:5px 8px;font-size:11px;margin:0}
+  .btn.edit{background:#f59e0b;color:#fff;width:auto;padding:5px 8px;font-size:11px;margin:0}
   .btn.gray{background:#64748b}
   .btn.share{background:#0284c7;margin-top:0;margin-bottom:12px}
+  .btn-group{display:flex;gap:6px;margin-top:8px}
+  .btn-group .btn{margin-top:0}
+  .row-actions{display:flex;gap:5px;flex-shrink:0}
   .item-row{display:flex;justify-content:space-between;align-items:center;padding:8px;background:#f8fafc;border-radius:8px;margin-top:6px;font-size:13px;gap:8px}
+  .item-row.editing{background:#fef3c7;border:1px solid #f59e0b}
   .stat-row{display:flex;justify-content:space-between;align-items:center;padding:8px 4px;border-bottom:1px solid #f1f5f9;font-size:12.5px;font-weight:700}
   .stat-ctrl{display:flex;align-items:center;gap:6px}
   .stat-val{min-width:24px;text-align:center;font-size:15px;font-weight:800}
@@ -117,7 +123,7 @@
   </div>
 
   <!-- EVENTI RIASSUNTO -->
-  <div class="card">
+  <div class="card" id="cardEventi">
     <h2>📋 Gol, Cartellini e Cambi (Auto-Formazioni)</h2>
     <div class="grid3">
       <div>
@@ -166,12 +172,19 @@
         <datalist id="extraPlayersList"></datalist>
       </div>
     </div>
-    <button class="btn" onclick="addEvento()">+ Aggiungi Evento</button>
+    <div id="evScoreWrap" style="display:none;margin-top:8px;">
+      <label>Punteggio parziale nella pillola (es. 1 - 0)</label>
+      <input type="text" id="evScoreEdit" placeholder="Es. 1 - 0">
+    </div>
+    <div class="btn-group">
+      <button class="btn" id="btnAddEv" onclick="addEvento()">+ Aggiungi Evento</button>
+      <button class="btn gray" id="btnCancelEv" style="display:none;width:auto;" onclick="cancelEditEv()">Annulla</button>
+    </div>
     <div id="listaEventi" style="margin-top:10px;"></div>
   </div>
 
   <!-- COMMENTO DIRETTA TESTUALE & FASI SALIENTI -->
-  <div class="card">
+  <div class="card" id="cardCommento">
     <h2>🎙️ Aggiungi Commento / Fase Saliente</h2>
     <div class="grid3">
       <div>
@@ -206,7 +219,10 @@
       <label>Testo della cronaca o della nota</label>
       <textarea id="commTesto" placeholder="Scrivi cosa è successo..."></textarea>
     </div>
-    <button class="btn" onclick="addCommento()">+ Aggiungi al Commento</button>
+    <div class="btn-group">
+      <button class="btn" id="btnAddComm" onclick="addCommento()">+ Aggiungi al Commento</button>
+      <button class="btn gray" id="btnCancelComm" style="display:none;width:auto;" onclick="cancelEditComm()">Annulla</button>
+    </div>
     <div id="listaCommento" style="margin-top:10px;"></div>
   </div>
 
@@ -269,6 +285,8 @@ const GIST_ID = "56a02aeaf74c413358c91b385c2d83d6";
 const RAW_URL = `https://gist.githubusercontent.com/botaniqa2025/${GIST_ID}/raw/match.json`;
 let matchData = null;
 let phaseChanged = false;
+let editEvIndex = -1;
+let editCommIndex = -1;
 
 const DEFAULT_STATS = [
   { label: "Tiri in porta", casa: "0", ospite: "0", percCasa: 50 },
@@ -319,8 +337,8 @@ function onCommIconChange(){
   const isGoal = (val === '🥅' || val === '🔴');
   if(isGoal){
     document.getElementById('commSaliente').checked = true;
-    if(matchData) document.getElementById('commScore').value = `${matchData.casa.gol} - ${matchData.ospite.gol}`;
-  } else {
+    if(matchData && editCommIndex === -1) document.getElementById('commScore').value = `${matchData.casa.gol} - ${matchData.ospite.gol}`;
+  } else if (editCommIndex === -1) {
     document.getElementById('commScore').value = '';
   }
 }
@@ -474,16 +492,22 @@ function renderForm(){
 
 function renderLists(){
   document.getElementById('listaCommento').innerHTML = matchData.commento.map((c,i)=>`
-    <div class="item-row">
+    <div class="item-row ${editCommIndex===i?'editing':''}">
       <span>${c.saliente ? '⭐ ' : ''}${c.isNota && !c.min ? `📝 <i>${c.testo}</i>` : `<b>${c.min}</b> ${c.icona ? c.icona + ' ' : ''}${c.score?`[${c.score}] `:''}${c.testo}`}</span>
-      <button class="btn red" onclick="delComm(${i})">Elimina</button>
+      <div class="row-actions">
+        <button class="btn edit" onclick="editComm(${i})">Modifica</button>
+        <button class="btn red" onclick="delComm(${i})">Elimina</button>
+      </div>
     </div>
   `).join('');
 
   document.getElementById('listaEventi').innerHTML = matchData.riassunto.map((e,i)=>`
-    <div class="item-row">
+    <div class="item-row ${editEvIndex===i?'editing':''}">
       <span><b>${e.min}</b> (${e.squadra==='casa'?'Casa':'Osp'}) ${e.score ? `[${e.score}] ` : ''}${e.testo} ${e.extra||''}</span>
-      <button class="btn red" onclick="delEv(${i})">Elimina</button>
+      <div class="row-actions">
+        <button class="btn edit" onclick="editEv(${i})">Modifica</button>
+        <button class="btn red" onclick="delEv(${i})">Elimina</button>
+      </div>
     </div>
   `).join('');
 }
@@ -491,6 +515,44 @@ function renderLists(){
 function chgGol(team, delta){
   matchData[team].gol = Math.max(0, (matchData[team].gol || 0) + delta);
   document.getElementById(team==='casa'?'golCasa':'golOspite').innerText = matchData[team].gol;
+}
+
+/* --- MODIFICA E AGGIUNTA COMMENTI --- */
+function editComm(i){
+  const c = matchData.commento[i];
+  editCommIndex = i;
+  document.getElementById('commMin').value = c.min || '';
+  if (c.isNota && !c.min) {
+    document.getElementById('commIcona').value = 'NOTA';
+  } else if (!c.icona) {
+    document.getElementById('commIcona').value = 'SOLO_MIN';
+  } else {
+    document.getElementById('commIcona').value = c.icona;
+  }
+  document.getElementById('commScore').value = c.score || '';
+  document.getElementById('commSaliente').checked = !!c.saliente;
+  document.getElementById('commTesto').value = c.testo || '';
+
+  const btn = document.getElementById('btnAddComm');
+  btn.innerText = "💾 Salva Modifica Commento";
+  btn.className = "btn orange";
+  document.getElementById('btnCancelComm').style.display = "block";
+  renderLists();
+  document.getElementById('cardCommento').scrollIntoView({ behavior: 'smooth' });
+}
+
+function cancelEditComm(){
+  editCommIndex = -1;
+  document.getElementById('commTesto').value = '';
+  document.getElementById('commMin').value = '';
+  document.getElementById('commScore').value = '';
+  document.getElementById('commSaliente').checked = false;
+  document.getElementById('commIcona').value = 'SOLO_MIN';
+  const btn = document.getElementById('btnAddComm');
+  btn.innerText = "+ Aggiungi al Commento";
+  btn.className = "btn";
+  document.getElementById('btnCancelComm').style.display = "none";
+  renderLists();
 }
 
 function addCommento(){
@@ -503,22 +565,72 @@ function addCommento(){
   const isGol = (sel === '🥅' || sel === '🔴');
   const min = document.getElementById('commMin').value.trim() || getCurrentAutoMin() || "1'";
 
+  let obj;
   if (sel === 'NOTA') {
-    matchData.commento.unshift({ isNota: true, min: "", icona: "", testo, saliente, isGol: false });
+    obj = { isNota: true, min: "", icona: "", testo, saliente, isGol: false };
   } else if (sel === 'SOLO_MIN') {
-    matchData.commento.unshift({ isNota: false, min, icona: "", testo, saliente, isGol: false });
+    obj = { isNota: false, min, icona: "", testo, saliente, isGol: false };
   } else {
-    matchData.commento.unshift({ isNota: false, min, icona: sel, testo, saliente: saliente || isGol, isGol, score });
+    obj = { isNota: false, min, icona: sel, testo, saliente: saliente || isGol, isGol, score };
   }
-  document.getElementById('commTesto').value = '';
-  document.getElementById('commMin').value = '';
-  document.getElementById('commScore').value = '';
-  document.getElementById('commSaliente').checked = false;
-  renderLists();
-  showToast("Aggiunto! Premi PUBBLICA in basso");
+
+  if (editCommIndex > -1) {
+    matchData.commento[editCommIndex] = obj;
+    cancelEditComm();
+    showToast("Commento modificato! Premi PUBBLICA");
+  } else {
+    matchData.commento.unshift(obj);
+    document.getElementById('commTesto').value = '';
+    document.getElementById('commMin').value = '';
+    document.getElementById('commScore').value = '';
+    document.getElementById('commSaliente').checked = false;
+    renderLists();
+    showToast("Aggiunto! Premi PUBBLICA in basso");
+  }
 }
 
-function delComm(i){ matchData.commento.splice(i,1); renderLists(); }
+function delComm(i){
+  if(editCommIndex === i) cancelEditComm();
+  matchData.commento.splice(i,1);
+  renderLists();
+}
+
+/* --- MODIFICA E AGGIUNTA EVENTI --- */
+function editEv(i){
+  const e = matchData.riassunto[i];
+  editEvIndex = i;
+  document.getElementById('evTempo').value = String(e.tempo || 1);
+  document.getElementById('evMin').value = e.min || '';
+  document.getElementById('evSquadra').value = e.squadra || 'casa';
+  refreshPlayerDropdowns();
+  document.getElementById('evTipo').value = e.tipo || 'gol';
+  document.getElementById('evTesto').value = e.testo || '';
+  document.getElementById('evExtra').value = e.extra || '';
+  document.getElementById('evScoreEdit').value = e.score || '';
+  document.getElementById('evScoreWrap').style.display = "block";
+
+  const btn = document.getElementById('btnAddEv');
+  btn.innerText = "💾 Salva Modifica Evento";
+  btn.className = "btn orange";
+  document.getElementById('btnCancelEv').style.display = "block";
+  renderLists();
+  document.getElementById('cardEventi').scrollIntoView({ behavior: 'smooth' });
+}
+
+function cancelEditEv(){
+  editEvIndex = -1;
+  document.getElementById('evTesto').value = '';
+  document.getElementById('evExtra').value = '';
+  document.getElementById('evMin').value = '';
+  document.getElementById('evPlayerSelect').value = '';
+  document.getElementById('evScoreEdit').value = '';
+  document.getElementById('evScoreWrap').style.display = "none";
+  const btn = document.getElementById('btnAddEv');
+  btn.innerText = "+ Aggiungi Evento";
+  btn.className = "btn";
+  document.getElementById('btnCancelEv').style.display = "none";
+  renderLists();
+}
 
 function addEvento(){
   const tempo = parseInt(document.getElementById('evTempo').value);
@@ -529,27 +641,37 @@ function addEvento(){
   const extra = document.getElementById('evExtra').value.trim();
   if(!testo) return alert("Seleziona o scrivi il giocatore!");
 
-  let score = "";
-  if (tipo === 'gol' || tipo === 'autogol') {
-    chgGol(squadra, 1);
-    score = `${matchData.casa.gol} - ${matchData.ospite.gol}`;
-  }
-
   const badgeMap = { gol: '⚽', giallo: '🟨', rosso: '🟥', cambio: '🔄' };
   if (badgeMap[tipo]) {
     addBadgeToPlayer(squadra, testo, badgeMap[tipo]);
   }
 
-  matchData.riassunto.push({ tempo, min, squadra, tipo, score, testo, extra });
-  document.getElementById('evTesto').value = '';
-  document.getElementById('evExtra').value = '';
-  document.getElementById('evMin').value = '';
-  document.getElementById('evPlayerSelect').value = '';
-  renderLists();
-  showToast("Evento e Formazione aggiornati! Premi PUBBLICA");
+  if (editEvIndex > -1) {
+    const score = document.getElementById('evScoreEdit').value.trim();
+    matchData.riassunto[editEvIndex] = { tempo, min, squadra, tipo, score, testo, extra };
+    cancelEditEv();
+    showToast("Evento modificato! Premi PUBBLICA");
+  } else {
+    let score = "";
+    if (tipo === 'gol' || tipo === 'autogol') {
+      chgGol(squadra, 1);
+      score = `${matchData.casa.gol} - ${matchData.ospite.gol}`;
+    }
+    matchData.riassunto.push({ tempo, min, squadra, tipo, score, testo, extra });
+    document.getElementById('evTesto').value = '';
+    document.getElementById('evExtra').value = '';
+    document.getElementById('evMin').value = '';
+    document.getElementById('evPlayerSelect').value = '';
+    renderLists();
+    showToast("Evento e Formazione aggiornati! Premi PUBBLICA");
+  }
 }
 
-function delEv(i){ matchData.riassunto.splice(i,1); renderLists(); }
+function delEv(i){
+  if(editEvIndex === i) cancelEditEv();
+  matchData.riassunto.splice(i,1);
+  renderLists();
+}
 
 function copySocialPost(){
   if(!matchData) return;
@@ -574,6 +696,8 @@ function copySocialPost(){
 
 function resetMatch(){
   if(!confirm("Vuoi cancellare tutti i gol, gli eventi e la cronaca della partita precedente?")) return;
+  cancelEditEv();
+  cancelEditComm();
   matchData.riassunto = [];
   matchData.commento = [];
   matchData.casa.gol = 0;

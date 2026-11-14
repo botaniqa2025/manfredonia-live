@@ -72,7 +72,6 @@
         <input type="number" id="minOverride" placeholder="Es. 12">
       </div>
     </div>
-    <p style="font-size:11px;color:#64748b;margin-top:6px;">Quando selezioni <b>1° TEMPO</b> o <b>2° TEMPO</b> e premi Pubblica, il cronometro scorre da solo ogni minuto!</p>
     <div class="grid2" style="margin-top:10px;">
       <div>
         <label id="lblCasa">Gol Casa</label>
@@ -93,19 +92,21 @@
     </div>
   </div>
 
-  <!-- COMMENTO DIRETTA TESTUALE -->
+  <!-- COMMENTO DIRETTA TESTUALE & NOTE -->
   <div class="card">
-    <h2>🎙️ Aggiungi Commento Live</h2>
+    <h2>🎙️ Aggiungi Commento o Nota</h2>
     <div class="grid3">
       <div>
         <label>Minuto (auto se vuoto)</label>
         <input type="text" id="commMin" placeholder="Auto">
       </div>
       <div style="grid-column:span 2;">
-        <label>Icona</label>
+        <label>Tipo / Icona</label>
         <select id="commIcona">
+          <option value="NOTA">📝 Nota (senza icona/minuto)</option>
           <option value="⚽">⚽ Azione / Tiro</option>
           <option value="🥅">🥅 GOOOOL!</option>
+          <option value="🔴">🔴 Autogol</option>
           <option value="🟨">🟨 Ammonizione</option>
           <option value="🟥">🟥 Espulsione</option>
           <option value="🔄">🔄 Sostituzione</option>
@@ -115,10 +116,10 @@
       </div>
     </div>
     <div style="margin-top:8px;">
-      <label>Testo della cronaca</label>
-      <textarea id="commTesto" placeholder="Scrivi cosa è successo..."></textarea>
+      <label>Testo della cronaca o della nota</label>
+      <textarea id="commTesto" placeholder="Scrivi cronaca o nota pre/post partita..."></textarea>
     </div>
-    <button class="btn" onclick="addCommento()">+ Aggiungi alla Cronaca</button>
+    <button class="btn" onclick="addCommento()">+ Aggiungi al Commento</button>
     <div id="listaCommento" style="margin-top:10px;"></div>
   </div>
 
@@ -145,19 +146,26 @@
         </select>
       </div>
     </div>
-    <div class="grid3" style="margin-top:8px;">
+    <div class="grid2" style="margin-top:8px;">
       <div>
         <label>Tipo</label>
         <select id="evTipo">
           <option value="gol">⚽ Gol</option>
+          <option value="autogol">🔴 Autogol</option>
           <option value="giallo">🟨 Giallo</option>
           <option value="rosso">🟥 Rosso</option>
           <option value="cambio">🔄 Cambio</option>
         </select>
       </div>
       <div>
+        <label>Punteggio (solo Gol/Autogol)</label>
+        <input type="text" id="evScore" placeholder="Es. 1 - 0">
+      </div>
+    </div>
+    <div class="grid2" style="margin-top:8px;">
+      <div>
         <label>Giocatore</label>
-        <input type="text" id="evTesto" placeholder="1-0 Spinelli M.">
+        <input type="text" id="evTesto" placeholder="Spinelli M.">
       </div>
       <div>
         <label>Nota (Assist/Esce)</label>
@@ -177,7 +185,7 @@
     <div id="boxStatistiche"></div>
   </div>
 
-  <!-- PRE-PARTITA: SQUADRE E LOGHI -->
+  <!-- PRE-PARTITA: SQUADRE, STADIO, ALLENATORI E LOGHI -->
   <div class="card">
     <h2>🏟️ Impostazioni Partita & Loghi</h2>
     <div class="grid2">
@@ -185,12 +193,16 @@
       <div><label>Data e Ora</label><input type="text" id="dataOra"></div>
     </div>
     <div class="grid2" style="margin-top:8px;">
+      <div><label>Stadio</label><input type="text" id="stadio" placeholder="Stadio Miramare"></div>
+      <div><label>Città</label><input type="text" id="citta" placeholder="Manfredonia"></div>
+    </div>
+    <div class="grid2" style="margin-top:8px;">
       <div><label>Squadra Casa</label><input type="text" id="nomeCasa"></div>
       <div><label>Squadra Ospite</label><input type="text" id="nomeOspite"></div>
     </div>
     <div class="grid2" style="margin-top:8px;">
-      <div><label>Modulo Casa</label><input type="text" id="modCasa"></div>
-      <div><label>Modulo Ospite</label><input type="text" id="modOspite"></div>
+      <div><label>Allenatore Casa</label><input type="text" id="allCasa" placeholder="Mister..."></div>
+      <div><label>Allenatore Ospite</label><input type="text" id="allOspite" placeholder="Mister..."></div>
     </div>
     <div style="margin-top:8px;"><label>Link Logo Casa (.png/.jpg/.webp)</label><input type="text" id="logoCasa"></div>
     <div style="margin-top:8px;"><label>Link Logo Ospite (.png/.jpg/.webp)</label><input type="text" id="logoOspite"></div>
@@ -221,6 +233,12 @@ const GIST_ID = "56a02aeaf74c413358c91b385c2d83d6";
 const RAW_URL = `https://gist.githubusercontent.com/botaniqa2025/${GIST_ID}/raw/match.json`;
 let matchData = null;
 let phaseChanged = false;
+
+const DEFAULT_STATS = [
+  { label: "Tiri in porta", casa: "0", ospite: "0", percCasa: 50 },
+  { label: "Tiri fuori", casa: "0", ospite: "0", percCasa: 50 },
+  { label: "Calci d'angolo", casa: "0", ospite: "0", percCasa: 50 }
+];
 
 function showToast(msg){
   const t=document.getElementById('toast');
@@ -280,6 +298,14 @@ async function init(){
   }
   const res = await fetch(RAW_URL + "?t=" + Date.now());
   matchData = await res.json();
+
+  // Normalizza alle 3 statistiche richieste
+  const oldStats = matchData.statistiche || [];
+  matchData.statistiche = DEFAULT_STATS.map(def => {
+    const found = oldStats.find(s => s.label.toLowerCase() === def.label.toLowerCase());
+    return found ? found : { ...def };
+  });
+
   renderForm();
   setInterval(updatePreviewBadge, 5000);
 }
@@ -287,6 +313,8 @@ async function init(){
 function renderForm(){
   document.getElementById('competizione').value = matchData.competizione || '';
   document.getElementById('dataOra').value = matchData.dataOra || '';
+  document.getElementById('stadio').value = matchData.stadio || '';
+  document.getElementById('citta').value = matchData.citta || '';
   const stEl = document.getElementById('stato');
   stEl.value = ['PRE-PARTITA','1° TEMPO','INTERVALLO','2° TEMPO','FINALE'].includes(matchData.stato) ? matchData.stato : '1° TEMPO';
   document.getElementById('nomeCasa').value = matchData.casa.nome || '';
@@ -295,8 +323,8 @@ function renderForm(){
   document.getElementById('lblOspite').innerText = "Gol " + matchData.ospite.nome;
   document.getElementById('golCasa').innerText = matchData.casa.gol || 0;
   document.getElementById('golOspite').innerText = matchData.ospite.gol || 0;
-  document.getElementById('modCasa').value = matchData.casa.modulo || '';
-  document.getElementById('modOspite').value = matchData.ospite.modulo || '';
+  document.getElementById('allCasa').value = matchData.casa.allenatore || '';
+  document.getElementById('allOspite').value = matchData.ospite.allenatore || '';
   document.getElementById('logoCasa').value = matchData.casa.logo || '';
   document.getElementById('logoOspite').value = matchData.ospite.logo || '';
 
@@ -320,14 +348,14 @@ function renderForm(){
 function renderLists(){
   document.getElementById('listaCommento').innerHTML = matchData.commento.map((c,i)=>`
     <div class="item-row">
-      <span><b>${c.min}</b> ${c.icona} ${c.testo}</span>
+      <span>${c.isNota || !c.icona ? `📝 <i>${c.testo}</i>` : `<b>${c.min}</b> ${c.icona} ${c.testo}`}</span>
       <button class="btn red" onclick="delComm(${i})">Elimina</button>
     </div>
   `).join('');
 
   document.getElementById('listaEventi').innerHTML = matchData.riassunto.map((e,i)=>`
     <div class="item-row">
-      <span><b>${e.min}</b> (${e.squadra==='casa'?'Casa':'Osp'}) ${e.testo} ${e.extra}</span>
+      <span><b>${e.min}</b> (${e.squadra==='casa'?'Casa':'Osp'}) ${e.score ? `[${e.score}] ` : ''}${e.testo} ${e.extra||''}</span>
       <button class="btn red" onclick="delEv(${i})">Elimina</button>
     </div>
   `).join('');
@@ -339,11 +367,16 @@ function chgGol(team, delta){
 }
 
 function addCommento(){
-  const min = document.getElementById('commMin').value.trim() || getCurrentAutoMin() || "1'";
-  const icona = document.getElementById('commIcona').value;
+  const sel = document.getElementById('commIcona').value;
   const testo = document.getElementById('commTesto').value.trim();
-  if(!testo) return alert("Scrivi prima il testo della cronaca!");
-  matchData.commento.unshift({ min, icona, testo });
+  if(!testo) return alert("Scrivi prima il testo!");
+
+  if (sel === 'NOTA') {
+    matchData.commento.unshift({ isNota: true, min: "", icona: "", testo });
+  } else {
+    const min = document.getElementById('commMin').value.trim() || getCurrentAutoMin() || "1'";
+    matchData.commento.unshift({ isNota: false, min, icona: sel, testo });
+  }
   document.getElementById('commTesto').value = '';
   document.getElementById('commMin').value = '';
   renderLists();
@@ -357,10 +390,12 @@ function addEvento(){
   const min = document.getElementById('evMin').value.trim() || getCurrentAutoMin() || "1'";
   const squadra = document.getElementById('evSquadra').value;
   const tipo = document.getElementById('evTipo').value;
+  const score = document.getElementById('evScore').value.trim();
   const testo = document.getElementById('evTesto').value.trim();
   const extra = document.getElementById('evExtra').value.trim();
   if(!testo) return alert("Scrivi il nome del giocatore!");
-  matchData.riassunto.push({ tempo, min, squadra, tipo, testo, extra });
+  matchData.riassunto.push({ tempo, min, squadra, tipo, score, testo, extra });
+  document.getElementById('evScore').value = '';
   document.getElementById('evTesto').value = '';
   document.getElementById('evExtra').value = '';
   document.getElementById('evMin').value = '';
@@ -376,6 +411,7 @@ function resetMatch(){
   matchData.commento = [];
   matchData.casa.gol = 0;
   matchData.ospite.gol = 0;
+  matchData.statistiche = DEFAULT_STATS.map(s => ({...s}));
   matchData.stato = "PRE-PARTITA";
   matchData.timerStart = null;
   matchData.timerBase = 1;
@@ -410,10 +446,12 @@ async function saveToGitHub(){
   matchData.stato = newStato;
   matchData.competizione = document.getElementById('competizione').value.trim();
   matchData.dataOra = document.getElementById('dataOra').value.trim();
+  matchData.stadio = document.getElementById('stadio').value.trim();
+  matchData.citta = document.getElementById('citta').value.trim();
   matchData.casa.nome = document.getElementById('nomeCasa').value.trim();
   matchData.ospite.nome = document.getElementById('nomeOspite').value.trim();
-  matchData.casa.modulo = document.getElementById('modCasa').value.trim();
-  matchData.ospite.modulo = document.getElementById('modOspite').value.trim();
+  matchData.casa.allenatore = document.getElementById('allCasa').value.trim();
+  matchData.ospite.allenatore = document.getElementById('allOspite').value.trim();
   matchData.casa.logo = document.getElementById('logoCasa').value.trim();
   matchData.ospite.logo = document.getElementById('logoOspite').value.trim();
 
@@ -448,7 +486,7 @@ async function saveToGitHub(){
     });
     if(!res.ok) throw new Error("Errore Token o rete");
     updatePreviewBadge();
-    showToast("✅ ONLINE! Cronometro e dati aggiornati!");
+    showToast("✅ ONLINE! Sito aggiornato!");
   }catch(e){
     alert("Errore durante il salvataggio: controlla il Token GitHub.");
   }finally{

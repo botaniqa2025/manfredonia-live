@@ -6,7 +6,7 @@
 <title>Manfredonia Calcio - Live Match</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-  body { background: transparent; color: #1a1a1a; padding: 6px; }
+  body { background: #f4f6f8; color: #1a1a1a; padding: 8px; }
   .card { max-width: 600px; margin: 0 auto; background: #fff; border-radius: 14px; overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,0.08); border: 1px solid #e5e7eb; }
   
   .header { background: linear-gradient(135deg, #003366 0%, #0066b2 100%); color: #fff; padding: 16px; text-align: center; }
@@ -96,6 +96,7 @@
 
 <script>
   const GIST_URL = "https://gist.githubusercontent.com/botaniqa2025/56a02aeaf74c413358c91b385c2d83d6/raw/match.json";
+  let currentData = null;
 
   function openTab(tabId, btn) {
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
@@ -122,10 +123,38 @@
     `).join('');
   }
 
+  function updateClock() {
+    if (!currentData) return;
+    const badge = document.getElementById('statoBadge');
+    const st = currentData.stato;
+
+    if (st === 'FINALE' || st === 'INTERVALLO' || st === 'PRE-PARTITA') {
+      badge.innerText = st;
+      badge.className = 'status final';
+      return;
+    }
+
+    badge.className = 'status';
+    if (currentData.timerStart) {
+      const elapsed = Math.floor((Date.now() - currentData.timerStart) / 60000);
+      const base = currentData.timerBase || 1;
+      const totMin = Math.max(base, base + elapsed);
+
+      if (st === '1° TEMPO' || (st === 'LIVE' && base <= 45)) {
+        badge.innerText = totMin <= 45 ? `LIVE ${totMin}'` : `LIVE 45+${totMin - 45}'`;
+      } else {
+        badge.innerText = totMin <= 90 ? `LIVE ${totMin}'` : `LIVE 90+${totMin - 90}'`;
+      }
+    } else {
+      badge.innerText = currentData.minuto ? `LIVE ${currentData.minuto}` : st;
+    }
+  }
+
   async function loadMatchData() {
     try {
       const res = await fetch(GIST_URL + "?t=" + Date.now());
       const data = await res.json();
+      currentData = data;
 
       document.getElementById('comp').innerText = data.competizione;
       document.getElementById('dateOra').innerText = data.dataOra;
@@ -135,9 +164,7 @@
       document.getElementById('logoOspite').src = data.ospite.logo;
       document.getElementById('risultato').innerText = `${data.casa.gol} - ${data.ospite.gol}`;
       
-      const badge = document.getElementById('statoBadge');
-      badge.innerText = data.stato === 'FINALE' ? 'FINALE' : `${data.stato} ${data.minuto}`;
-      badge.className = data.stato === 'FINALE' ? 'status final' : 'status';
+      updateClock();
 
       const t1 = data.riassunto.filter(e => e.tempo === 1);
       const t2 = data.riassunto.filter(e => e.tempo === 2);
@@ -196,12 +223,13 @@
       const now = new Date();
       document.getElementById('syncStatus').innerText = `Ultimo sync: ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
     } catch (err) {
-      document.getElementById('syncStatus').innerText = "Errore lettura dati — controlla le virgole nel JSON";
+      document.getElementById('syncStatus').innerText = "Errore lettura dati";
     }
   }
 
   loadMatchData();
   setInterval(loadMatchData, 10000);
+  setInterval(updateClock, 5000);
 </script>
 </body>
 </html>

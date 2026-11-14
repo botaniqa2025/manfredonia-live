@@ -6,7 +6,7 @@
 <title>Regia Live - Manfredonia Calcio</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
-  body{background:#eef2f6;color:#1e293b;padding:12px 12px 90px}
+  body{background:#eef2f6;color:#1e293b;padding:12px 12px 96px}
   .wrap{max-width:600px;margin:0 auto}
   .top{background:#003366;color:#fff;padding:14px;border-radius:12px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
   .top h1{font-size:16px}
@@ -43,8 +43,17 @@
   .rec-btn.active{background:#005596;color:#fff;border-color:#005596}
   .chk-box{display:flex;align-items:center;gap:8px;background:#f8fafc;padding:9px 10px;border-radius:8px;border:1px solid #cbd5e1;margin-top:8px;cursor:pointer;font-size:12.5px;font-weight:700;color:#0f172a}
   .chk-box input{width:18px;height:18px;accent-color:#005596;cursor:pointer}
-  .save-bar{position:fixed;bottom:0;left:0;right:0;background:#fff;padding:12px;box-shadow:0 -4px 16px rgba(0,0,0,.12);z-index:99;display:flex;gap:8px;justify-content:center}
-  .save-bar button{max-width:450px;margin:0;font-size:15px;padding:14px;background:#16a34a}
+  
+  /* Barra salvataggio con avviso visivo modifiche non pubblicate */
+  .save-bar{position:fixed;bottom:0;left:0;right:0;background:#fff;padding:12px;box-shadow:0 -4px 16px rgba(0,0,0,.14);z-index:99;display:flex;gap:8px;justify-content:center;transition:background 0.25s}
+  .save-bar.dirty{background:#fffbeb;border-top:2px solid #f59e0b}
+  .save-bar button{max-width:460px;margin:0;font-size:14.5px;padding:14px;background:#16a34a;transition:0.25s}
+  .save-bar.dirty button{background:#ea580c;box-shadow:0 4px 14px rgba(234,88,12,0.45);animation:pulseSave 1.4s infinite ease-in-out}
+  @keyframes pulseSave{
+    0%,100%{transform:scale(1)}
+    50%{transform:scale(1.018)}
+  }
+
   .toast{position:fixed;top:14px;left:50%;transform:translateX(-50%);background:#0f172a;color:#fff;padding:10px 18px;border-radius:20px;font-size:13px;font-weight:700;display:none;z-index:999}
   .live-pill{background:#e60026;color:#fff;padding:2px 8px;border-radius:10px;font-size:11px}
 </style>
@@ -87,7 +96,7 @@
       </div>
       <div>
         <label>Correggi minuto ora (opzionale)</label>
-        <input type="number" id="minOverride" placeholder="Es. 12">
+        <input type="number" id="minOverride" placeholder="Es. 12" oninput="markDirty()">
       </div>
     </div>
 
@@ -122,7 +131,7 @@
     </div>
   </div>
 
-  <!-- EVENTI RIASSUNTO -->
+  <!-- EVENTI RIASSUNTO CON FILTRO SOSTITUZIONI -->
   <div class="card" id="cardEventi">
     <h2>📋 Gol, Cartellini e Cambi (Auto-Formazioni)</h2>
     <div class="grid3">
@@ -148,26 +157,33 @@
     <div class="grid2" style="margin-top:8px;">
       <div>
         <label>Tipo Evento</label>
-        <select id="evTipo">
+        <select id="evTipo" onchange="refreshPlayerDropdowns()">
           <option value="gol">⚽ Gol (+1 Auto)</option>
           <option value="autogol">🔴 Autogol (+1 Auto)</option>
           <option value="giallo">🟨 Ammonizione</option>
           <option value="rosso">🟥 Espulsione</option>
-          <option value="cambio">🔄 Sostituzione</option>
+          <option value="cambio">🔄 Sostituzione (Filtrata)</option>
         </select>
       </div>
       <div>
-        <label>Seleziona Giocatore</label>
+        <label id="lblPlayerSelect">Seleziona Giocatore</label>
         <select id="evPlayerSelect" onchange="onSelectPlayer()"></select>
       </div>
     </div>
+
+    <!-- Menu secondario filtrato sui Titolari (compare solo per le Sostituzioni) -->
+    <div id="subOutWrap" style="display:none;margin-top:8px;">
+      <label>Chi ESCE (Titolari / In campo)</label>
+      <select id="evSubOutSelect" onchange="onSelectSubOut()"></select>
+    </div>
+
     <div class="grid2" style="margin-top:8px;">
       <div>
-        <label>Nome (o scrivi a mano)</label>
+        <label id="lblEvTesto">Nome (o scrivi a mano)</label>
         <input type="text" id="evTesto" placeholder="Spinelli M.">
       </div>
       <div>
-        <label>Assist / Esce (o scegli)</label>
+        <label id="lblEvExtra">Assist / Esce (o scegli)</label>
         <input type="text" id="evExtra" list="extraPlayersList" placeholder="(Sainz-Maza)">
         <datalist id="extraPlayersList"></datalist>
       </div>
@@ -233,31 +249,31 @@
   </div>
 
   <!-- IMPOSTAZIONI PARTITA, STADIO, ALLENATORI, ARBITRI E LOGHI -->
-  <div class="card">
+  <div class="card" id="cardMatchInfo">
     <h2>🏟️ Info Gara, Stadio, Allenatori & Arbitri</h2>
     <div class="grid2">
-      <div><label>Competizione</label><input type="text" id="competizione"></div>
-      <div><label>Data e Ora</label><input type="text" id="dataOra"></div>
+      <div><label>Competizione</label><input type="text" id="competizione" oninput="markDirty()"></div>
+      <div><label>Data e Ora</label><input type="text" id="dataOra" oninput="markDirty()"></div>
     </div>
     <div class="grid2" style="margin-top:8px;">
-      <div><label>Stadio</label><input type="text" id="stadio" placeholder="Stadio Miramare"></div>
-      <div><label>Città</label><input type="text" id="citta" placeholder="Manfredonia"></div>
+      <div><label>Stadio</label><input type="text" id="stadio" placeholder="Stadio Miramare" oninput="markDirty()"></div>
+      <div><label>Città</label><input type="text" id="citta" placeholder="Manfredonia" oninput="markDirty()"></div>
     </div>
     <div class="grid2" style="margin-top:8px;">
-      <div><label>Squadra Casa</label><input type="text" id="nomeCasa"></div>
-      <div><label>Squadra Ospite</label><input type="text" id="nomeOspite"></div>
+      <div><label>Squadra Casa</label><input type="text" id="nomeCasa" oninput="markDirty()"></div>
+      <div><label>Squadra Ospite</label><input type="text" id="nomeOspite" oninput="markDirty()"></div>
     </div>
     <div class="grid2" style="margin-top:8px;">
-      <div><label>Allenatore Casa</label><input type="text" id="allCasa" placeholder="Mister..."></div>
-      <div><label>Allenatore Ospite</label><input type="text" id="allOspite" placeholder="Mister..."></div>
+      <div><label>Allenatore Casa</label><input type="text" id="allCasa" placeholder="Mister..." oninput="markDirty()"></div>
+      <div><label>Allenatore Ospite</label><input type="text" id="allOspite" placeholder="Mister..." oninput="markDirty()"></div>
     </div>
     <div class="grid3" style="margin-top:8px;">
-      <div><label>Arbitro</label><input type="text" id="arbitro" placeholder="Sig..."></div>
-      <div><label>Assistente 1</label><input type="text" id="ass1" placeholder="Sig..."></div>
-      <div><label>Assistente 2</label><input type="text" id="ass2" placeholder="Sig..."></div>
+      <div><label>Arbitro</label><input type="text" id="arbitro" placeholder="Sig..." oninput="markDirty()"></div>
+      <div><label>Assistente 1</label><input type="text" id="ass1" placeholder="Sig..." oninput="markDirty()"></div>
+      <div><label>Assistente 2</label><input type="text" id="ass2" placeholder="Sig..." oninput="markDirty()"></div>
     </div>
-    <div style="margin-top:8px;"><label>Link Logo Casa (.png/.jpg/.webp)</label><input type="text" id="logoCasa"></div>
-    <div style="margin-top:8px;"><label>Link Logo Ospite (.png/.jpg/.webp)</label><input type="text" id="logoOspite"></div>
+    <div style="margin-top:8px;"><label>Link Logo Casa (.png/.jpg/.webp)</label><input type="text" id="logoCasa" oninput="markDirty()"></div>
+    <div style="margin-top:8px;"><label>Link Logo Ospite (.png/.jpg/.webp)</label><input type="text" id="logoOspite" oninput="markDirty()"></div>
   </div>
 
   <!-- FORMAZIONI -->
@@ -265,18 +281,18 @@
     <h2>👕 Formazioni (Numero - Cognome Nome)</h2>
     <p style="font-size:11px;color:#64748b;margin-bottom:8px;">Un giocatore per riga: <b>23 - Nobile Tommaso</b>. Le icone ⚽ 🟨 🟥 🔄 si aggiungono da sole quando registri gli eventi!</p>
     <div class="grid2">
-      <div><label>Titolari Casa</label><textarea id="fCasaTit" onchange="syncTextToPlayers()" style="min-height:190px;font-size:12px;"></textarea></div>
-      <div><label>Titolari Ospite</label><textarea id="fOspTit" onchange="syncTextToPlayers()" style="min-height:190px;font-size:12px;"></textarea></div>
+      <div><label>Titolari Casa</label><textarea id="fCasaTit" onchange="syncTextToPlayers()" oninput="markDirty()" style="min-height:190px;font-size:12px;"></textarea></div>
+      <div><label>Titolari Ospite</label><textarea id="fOspTit" onchange="syncTextToPlayers()" oninput="markDirty()" style="min-height:190px;font-size:12px;"></textarea></div>
     </div>
     <div class="grid2" style="margin-top:8px;">
-      <div><label>Panchina Casa</label><textarea id="fCasaPan" onchange="syncTextToPlayers()" style="min-height:140px;font-size:12px;"></textarea></div>
-      <div><label>Panchina Ospite</label><textarea id="fOspPan" onchange="syncTextToPlayers()" style="min-height:140px;font-size:12px;"></textarea></div>
+      <div><label>Panchina Casa</label><textarea id="fCasaPan" onchange="syncTextToPlayers()" oninput="markDirty()" style="min-height:140px;font-size:12px;"></textarea></div>
+      <div><label>Panchina Ospite</label><textarea id="fOspPan" onchange="syncTextToPlayers()" oninput="markDirty()" style="min-height:140px;font-size:12px;"></textarea></div>
     </div>
     <button class="btn gray" style="margin-top:12px;" onclick="resetMatch()">🧹 Azzera Eventi e Cronaca (Nuova Partita)</button>
   </div>
 </div>
 
-<div class="save-bar">
+<div class="save-bar" id="saveBar">
   <button class="btn green" id="btnSaveAll" onclick="saveToGitHub()">💾 PUBBLICA AGGIORNAMENTO LIVE</button>
 </div>
 
@@ -287,12 +303,36 @@ let matchData = null;
 let phaseChanged = false;
 let editEvIndex = -1;
 let editCommIndex = -1;
+let hasUnsavedChanges = false;
 
 const DEFAULT_STATS = [
   { label: "Tiri in porta", casa: "0", ospite: "0", percCasa: 50 },
   { label: "Tiri fuori", casa: "0", ospite: "0", percCasa: 50 },
   { label: "Calci d'angolo", casa: "0", ospite: "0", percCasa: 50 }
 ];
+
+function markDirty(){
+  hasUnsavedChanges = true;
+  const bar = document.getElementById('saveBar');
+  const btn = document.getElementById('btnSaveAll');
+  bar.classList.add('dirty');
+  if(!btn.disabled) btn.innerText = "⚠️ MODIFICHE NON SALVATE - PUBBLICA ORA";
+}
+
+function clearDirty(){
+  hasUnsavedChanges = false;
+  const bar = document.getElementById('saveBar');
+  const btn = document.getElementById('btnSaveAll');
+  bar.classList.remove('dirty');
+  btn.innerText = "💾 PUBBLICA AGGIORNAMENTO LIVE";
+}
+
+window.addEventListener('beforeunload', function(e){
+  if(hasUnsavedChanges){
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
 
 function showToast(msg){
   const t=document.getElementById('toast');
@@ -327,6 +367,7 @@ function updatePreviewBadge(){
 
 function onPhaseChange(){
   phaseChanged = true;
+  markDirty();
   const st = document.getElementById('stato').value;
   if(st === '2° TEMPO') document.getElementById('evTempo').value = '2';
   if(st === '1° TEMPO') document.getElementById('evTempo').value = '1';
@@ -348,6 +389,7 @@ function setRec(val){
   document.querySelectorAll('.rec-btn').forEach(b=>{
     b.classList.toggle('active', (val==='' && b.innerText==='Nessuno') || b.innerText===`+${val}'`);
   });
+  markDirty();
   showToast(val ? `Recupero +${val}' impostato` : "Recupero rimosso");
 }
 
@@ -379,17 +421,45 @@ function syncTextToPlayers(){
 function refreshPlayerDropdowns(){
   if(!matchData) return;
   const team = document.getElementById('evSquadra').value;
-  const tit = team === 'casa' ? matchData.formazioni.casaTitolari : matchData.formazioni.ospiteTitolari;
-  const pan = team === 'casa' ? matchData.formazioni.casaPanchina : matchData.formazioni.ospitePanchina;
-  const all = [...(tit||[]), ...(pan||[])];
+  const tipo = document.getElementById('evTipo').value;
+  const tit = team === 'casa' ? (matchData.formazioni.casaTitolari || []) : (matchData.formazioni.ospiteTitolari || []);
+  const pan = team === 'casa' ? (matchData.formazioni.casaPanchina || []) : (matchData.formazioni.ospitePanchina || []);
+  const all = [...tit, ...pan];
 
   const sel = document.getElementById('evPlayerSelect');
-  sel.innerHTML = `<option value="">-- Scegli o scrivi sotto --</option>` + 
-    all.map(p => `<option value="${p.nome}">${p.num} - ${p.nome}</option>`).join('');
+  const lblSel = document.getElementById('lblPlayerSelect');
+  const subWrap = document.getElementById('subOutWrap');
+  const subOutSel = document.getElementById('evSubOutSelect');
+  const lblTesto = document.getElementById('lblEvTesto');
+  const lblExtra = document.getElementById('lblEvExtra');
+
+  if (tipo === 'cambio') {
+    lblSel.innerText = "Chi ENTRA (Panchina)";
+    lblTesto.innerText = "Giocatore che ENTRA";
+    lblExtra.innerText = "Giocatore che ESCE";
+    subWrap.style.display = "block";
+
+    sel.innerHTML = `<option value="">-- Panchina (${pan.length}) --</option>` +
+      pan.map(p => `<option value="${p.nome}">${p.num} - ${p.nome}</option>`).join('');
+
+    // Per chi esce mostra titolari + eventuali subentrati già entrati in precedenza
+    const subbedIn = pan.filter(p => (p.badge || '').includes('🔄'));
+    const onPitch = [...tit, ...subbedIn];
+    subOutSel.innerHTML = `<option value="">-- Titolari in campo (${onPitch.length}) --</option>` +
+      onPitch.map(p => `<option value="${p.nome}">${p.num} - ${p.nome}</option>`).join('');
+  } else {
+    lblSel.innerText = "Seleziona Giocatore";
+    lblTesto.innerText = "Nome (o scrivi a mano)";
+    lblExtra.innerText = "Assist / Nota (o scegli)";
+    subWrap.style.display = "none";
+
+    sel.innerHTML = `<option value="">-- Scegli o scrivi sotto --</option>` +
+      all.map(p => `<option value="${p.nome}">${p.num} - ${p.nome}</option>`).join('');
+  }
 
   const dl = document.getElementById('extraPlayersList');
-  dl.innerHTML = all.map(p => `<option value="(${p.nome})">`).join('') + 
-    all.map(p => `<option value="esce ${p.nome}">`).join('');
+  dl.innerHTML = all.map(p => `<option value="(${p.nome})">`).join('') +
+    all.map(p => `<option value="(esce ${p.nome})">`).join('');
 }
 
 function onSelectPlayer(){
@@ -397,12 +467,19 @@ function onSelectPlayer(){
   if(val) document.getElementById('evTesto').value = val;
 }
 
+function onSelectSubOut(){
+  const val = document.getElementById('evSubOutSelect').value;
+  if(val) document.getElementById('evExtra').value = `(esce ${val})`;
+}
+
 function addBadgeToPlayer(team, playerName, badgeIcon){
   if(!playerName) return;
+  const cleanName = playerName.replace(/^\(esce\s+/i, '').replace(/^\(/, '').replace(/\)$/, '').trim();
+  if(!cleanName) return;
   const keys = team === 'casa' ? ['casaTitolari','casaPanchina'] : ['ospiteTitolari','ospitePanchina'];
   keys.forEach(k => {
     (matchData.formazioni[k] || []).forEach(p => {
-      if(p.nome.toLowerCase().includes(playerName.toLowerCase()) || playerName.toLowerCase().includes(p.nome.toLowerCase())){
+      if(p.nome.toLowerCase().includes(cleanName.toLowerCase()) || cleanName.toLowerCase().includes(p.nome.toLowerCase())){
         if(!p.badge.includes(badgeIcon)) p.badge = (p.badge + badgeIcon).trim();
       }
     });
@@ -430,6 +507,7 @@ async function init(){
   if(!matchData.infoGara) matchData.infoGara = { arbitro: "", ass1: "", ass2: "" };
 
   renderForm();
+  clearDirty();
   setInterval(updatePreviewBadge, 5000);
 }
 
@@ -455,6 +533,7 @@ function chgStat(idx, side, delta){
   const cur = parseInt(matchData.statistiche[idx][side]) || 0;
   matchData.statistiche[idx][side] = String(Math.max(0, cur + delta));
   renderStats();
+  markDirty();
 }
 
 function renderForm(){
@@ -515,6 +594,7 @@ function renderLists(){
 function chgGol(team, delta){
   matchData[team].gol = Math.max(0, (matchData[team].gol || 0) + delta);
   document.getElementById(team==='casa'?'golCasa':'golOspite').innerText = matchData[team].gol;
+  markDirty();
 }
 
 /* --- MODIFICA E AGGIUNTA COMMENTI --- */
@@ -577,6 +657,7 @@ function addCommento(){
   if (editCommIndex > -1) {
     matchData.commento[editCommIndex] = obj;
     cancelEditComm();
+    markDirty();
     showToast("Commento modificato! Premi PUBBLICA");
   } else {
     matchData.commento.unshift(obj);
@@ -585,6 +666,7 @@ function addCommento(){
     document.getElementById('commScore').value = '';
     document.getElementById('commSaliente').checked = false;
     renderLists();
+    markDirty();
     showToast("Aggiunto! Premi PUBBLICA in basso");
   }
 }
@@ -593,6 +675,7 @@ function delComm(i){
   if(editCommIndex === i) cancelEditComm();
   matchData.commento.splice(i,1);
   renderLists();
+  markDirty();
 }
 
 /* --- MODIFICA E AGGIUNTA EVENTI --- */
@@ -602,8 +685,8 @@ function editEv(i){
   document.getElementById('evTempo').value = String(e.tempo || 1);
   document.getElementById('evMin').value = e.min || '';
   document.getElementById('evSquadra').value = e.squadra || 'casa';
-  refreshPlayerDropdowns();
   document.getElementById('evTipo').value = e.tipo || 'gol';
+  refreshPlayerDropdowns();
   document.getElementById('evTesto').value = e.testo || '';
   document.getElementById('evExtra').value = e.extra || '';
   document.getElementById('evScoreEdit').value = e.score || '';
@@ -623,6 +706,7 @@ function cancelEditEv(){
   document.getElementById('evExtra').value = '';
   document.getElementById('evMin').value = '';
   document.getElementById('evPlayerSelect').value = '';
+  document.getElementById('evSubOutSelect').value = '';
   document.getElementById('evScoreEdit').value = '';
   document.getElementById('evScoreWrap').style.display = "none";
   const btn = document.getElementById('btnAddEv');
@@ -644,12 +728,17 @@ function addEvento(){
   const badgeMap = { gol: '⚽', giallo: '🟨', rosso: '🟥', cambio: '🔄' };
   if (badgeMap[tipo]) {
     addBadgeToPlayer(squadra, testo, badgeMap[tipo]);
+    if (tipo === 'cambio' && extra) {
+      addBadgeToPlayer(squadra, extra, '🔄');
+    }
   }
 
   if (editEvIndex > -1) {
     const score = document.getElementById('evScoreEdit').value.trim();
     matchData.riassunto[editEvIndex] = { tempo, min, squadra, tipo, score, testo, extra };
     cancelEditEv();
+    refreshPlayerDropdowns();
+    markDirty();
     showToast("Evento modificato! Premi PUBBLICA");
   } else {
     let score = "";
@@ -662,7 +751,10 @@ function addEvento(){
     document.getElementById('evExtra').value = '';
     document.getElementById('evMin').value = '';
     document.getElementById('evPlayerSelect').value = '';
+    document.getElementById('evSubOutSelect').value = '';
+    refreshPlayerDropdowns();
     renderLists();
+    markDirty();
     showToast("Evento e Formazione aggiornati! Premi PUBBLICA");
   }
 }
@@ -671,6 +763,7 @@ function delEv(i){
   if(editEvIndex === i) cancelEditEv();
   matchData.riassunto.splice(i,1);
   renderLists();
+  markDirty();
 }
 
 function copySocialPost(){
@@ -708,6 +801,7 @@ function resetMatch(){
   matchData.timerStart = null;
   matchData.timerBase = 1;
   renderForm();
+  markDirty();
   showToast("Partita azzerata! Premi PUBBLICA");
 }
 
@@ -781,11 +875,12 @@ async function saveToGitHub(){
     });
     if(!res.ok) throw new Error("Errore Token o rete");
     updatePreviewBadge();
+    clearDirty();
     showToast("✅ ONLINE! Tutto aggiornato!");
   }catch(e){
     alert("Errore durante il salvataggio: controlla il Token GitHub.");
+    btn.innerText = "⚠️ RIPROVA A PUBBLICARE";
   }finally{
-    btn.innerText = "💾 PUBBLICA AGGIORNAMENTO LIVE";
     btn.disabled = false;
   }
 }

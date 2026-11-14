@@ -15,7 +15,7 @@
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
   .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
   label{display:block;font-size:11px;font-weight:700;color:#64748b;margin-bottom:3px}
-  input,select,textarea{width:100%;padding:9px;border:1px solid #cbd5e1;border-radius:8px;font-size:14px;background:#fff}
+  input[type="text"],input[type="number"],input[type="password"],select,textarea{width:100%;padding:9px;border:1px solid #cbd5e1;border-radius:8px;font-size:14px;background:#fff}
   textarea{resize:vertical;min-height:60px}
   .score-ctrl{display:flex;align-items:center;justify-content:center;gap:12px;background:#f8fafc;padding:10px;border-radius:10px;margin-top:8px}
   .btn-circle{width:38px;height:38px;border-radius:50%;border:none;background:#005596;color:#fff;font-size:20px;font-weight:800;cursor:pointer}
@@ -35,6 +35,8 @@
   .rec-bar{display:flex;gap:5px;margin-top:8px;align-items:center;flex-wrap:wrap}
   .rec-btn{padding:5px 9px;border:1px solid #cbd5e1;border-radius:6px;background:#f8fafc;font-size:12px;font-weight:700;cursor:pointer}
   .rec-btn.active{background:#005596;color:#fff;border-color:#005596}
+  .chk-box{display:flex;align-items:center;gap:8px;background:#f8fafc;padding:9px 10px;border-radius:8px;border:1px solid #cbd5e1;margin-top:8px;cursor:pointer;font-size:12.5px;font-weight:700;color:#0f172a}
+  .chk-box input{width:18px;height:18px;accent-color:#005596;cursor:pointer}
   .save-bar{position:fixed;bottom:0;left:0;right:0;background:#fff;padding:12px;box-shadow:0 -4px 16px rgba(0,0,0,.12);z-index:99;display:flex;gap:8px;justify-content:center}
   .save-bar button{max-width:450px;margin:0;font-size:15px;padding:14px;background:#16a34a}
   .toast{position:fixed;top:14px;left:50%;transform:translateX(-50%);background:#0f172a;color:#fff;padding:10px 18px;border-radius:20px;font-size:13px;font-weight:700;display:none;z-index:999}
@@ -114,7 +116,7 @@
     </div>
   </div>
 
-  <!-- EVENTI RIASSUNTO CON MENU GIOCATORI E AUTOMAZIONI -->
+  <!-- EVENTI RIASSUNTO -->
   <div class="card">
     <h2>📋 Gol, Cartellini e Cambi (Auto-Formazioni)</h2>
     <div class="grid3">
@@ -168,32 +170,40 @@
     <div id="listaEventi" style="margin-top:10px;"></div>
   </div>
 
-  <!-- COMMENTO DIRETTA TESTUALE & NOTE -->
+  <!-- COMMENTO DIRETTA TESTUALE & FASI SALIENTI -->
   <div class="card">
-    <h2>🎙️ Aggiungi Commento o Nota</h2>
+    <h2>🎙️ Aggiungi Commento / Fase Saliente</h2>
     <div class="grid3">
       <div>
         <label>Minuto (auto)</label>
         <input type="text" id="commMin" placeholder="Auto">
       </div>
-      <div style="grid-column:span 2;">
+      <div>
         <label>Tipo / Icona</label>
-        <select id="commIcona">
-          <option value="NOTA">📝 Nota (senza icona/minuto)</option>
+        <select id="commIcona" onchange="onCommIconChange()">
           <option value="⚽">⚽ Azione / Tiro</option>
-          <option value="🥅">🥅 GOOOOL!</option>
-          <option value="🔴">🔴 Autogol</option>
+          <option value="🥅">🥅 GOOOOL! (Blu scuro)</option>
+          <option value="🔴">🔴 Autogol (Blu scuro)</option>
           <option value="🟨">🟨 Ammonizione</option>
           <option value="🟥">🟥 Espulsione</option>
           <option value="🔄">🔄 Sostituzione</option>
           <option value="🚩">🚩 Calcio d'angolo</option>
           <option value="⏱️">⏱️ Fischio / Recupero</option>
+          <option value="NOTA">📝 Nota (senza icona)</option>
         </select>
       </div>
+      <div>
+        <label>Punteggio (opzionale)</label>
+        <input type="text" id="commScore" placeholder="Es. 1 - 0">
+      </div>
     </div>
+    <label class="chk-box">
+      <input type="checkbox" id="commSaliente">
+      <span>⭐ Fase Saliente (Grassetto + va anche in Fasi Salienti)</span>
+    </label>
     <div style="margin-top:8px;">
       <label>Testo della cronaca o della nota</label>
-      <textarea id="commTesto" placeholder="Scrivi cronaca o nota pre/post partita..."></textarea>
+      <textarea id="commTesto" placeholder="Scrivi cosa è successo..."></textarea>
     </div>
     <button class="btn" onclick="addCommento()">+ Aggiungi al Commento</button>
     <div id="listaCommento" style="margin-top:10px;"></div>
@@ -301,6 +311,17 @@ function onPhaseChange(){
   const st = document.getElementById('stato').value;
   if(st === '2° TEMPO') document.getElementById('evTempo').value = '2';
   if(st === '1° TEMPO') document.getElementById('evTempo').value = '1';
+}
+
+function onCommIconChange(){
+  const val = document.getElementById('commIcona').value;
+  const isGoal = (val === '🥅' || val === '🔴');
+  if(isGoal){
+    document.getElementById('commSaliente').checked = true;
+    if(matchData) document.getElementById('commScore').value = `${matchData.casa.gol} - ${matchData.ospite.gol}`;
+  } else {
+    document.getElementById('commScore').value = '';
+  }
 }
 
 function setRec(val){
@@ -453,7 +474,7 @@ function renderForm(){
 function renderLists(){
   document.getElementById('listaCommento').innerHTML = matchData.commento.map((c,i)=>`
     <div class="item-row">
-      <span>${c.isNota || !c.icona ? `📝 <i>${c.testo}</i>` : `<b>${c.min}</b> ${c.icona} ${c.testo}`}</span>
+      <span>${c.saliente ? '⭐ ' : ''}${c.isNota || !c.icona ? `📝 <i>${c.testo}</i>` : `<b>${c.min}</b> ${c.icona} ${c.score?`[${c.score}] `:''}${c.testo}`}</span>
       <button class="btn red" onclick="delComm(${i})">Elimina</button>
     </div>
   `).join('');
@@ -474,16 +495,22 @@ function chgGol(team, delta){
 function addCommento(){
   const sel = document.getElementById('commIcona').value;
   const testo = document.getElementById('commTesto').value.trim();
+  const saliente = document.getElementById('commSaliente').checked;
+  const score = document.getElementById('commScore').value.trim();
   if(!testo) return alert("Scrivi prima il testo!");
 
+  const isGol = (sel === '🥅' || sel === '🔴');
+
   if (sel === 'NOTA') {
-    matchData.commento.unshift({ isNota: true, min: "", icona: "", testo });
+    matchData.commento.unshift({ isNota: true, min: "", icona: "", testo, saliente, isGol: false });
   } else {
     const min = document.getElementById('commMin').value.trim() || getCurrentAutoMin() || "1'";
-    matchData.commento.unshift({ isNota: false, min, icona: sel, testo });
+    matchData.commento.unshift({ isNota: false, min, icona: sel, testo, saliente: saliente || isGol, isGol, score });
   }
   document.getElementById('commTesto').value = '';
   document.getElementById('commMin').value = '';
+  document.getElementById('commScore').value = '';
+  document.getElementById('commSaliente').checked = false;
   renderLists();
   showToast("Aggiunto! Premi PUBBLICA in basso");
 }
@@ -505,7 +532,6 @@ function addEvento(){
     score = `${matchData.casa.gol} - ${matchData.ospite.gol}`;
   }
 
-  // Aggiorna icona nella formazione
   const badgeMap = { gol: '⚽', giallo: '🟨', rosso: '🟥', cambio: '🔄' };
   if (badgeMap[tipo]) {
     addBadgeToPlayer(squadra, testo, badgeMap[tipo]);

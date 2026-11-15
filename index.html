@@ -252,6 +252,17 @@
     renderCommento();
   }
 
+  function parseMinuteSortValue(minStr) {
+    if (!minStr) return -1;
+    const clean = String(minStr).replace(/'/g, '').trim();
+    if (clean.includes('+')) {
+      const parts = clean.split('+');
+      return (parseInt(parts[0], 10) || 0) + ((parseInt(parts[1], 10) || 0) * 0.01);
+    }
+    const val = parseInt(clean, 10);
+    return isNaN(val) ? -1 : val;
+  }
+
   function renderPill(e) {
     if (e.tipo === 'gol') {
       return `<span class="ev-pill">⚽${e.score ? ` <span>${e.score}</span>` : ''}</span>`;
@@ -277,7 +288,14 @@
 
   function renderCommento() {
     if (!currentData) return;
-    const list = (currentData.commento || []).filter(c => commFilter === 'all' || c.saliente);
+    const rawList = (currentData.commento || []).filter(c => commFilter === 'all' || c.saliente);
+    const list = [...rawList].sort((a, b) => {
+      const va = (a.isNota && !a.min) ? -1 : parseMinuteSortValue(a.min);
+      const vb = (b.isNota && !b.min) ? -1 : parseMinuteSortValue(b.min);
+      if (va === vb) return 0;
+      return vb - va;
+    });
+
     if (!list.length) {
       document.getElementById('commentoList').innerHTML = `<div style="font-size:12.5px;color:#94a3b8;padding:10px 2px;">Nessuna azione disponibile</div>`;
       return;
@@ -395,8 +413,8 @@
       
       updateClock();
 
-      const t1 = data.riassunto.filter(e => e.tempo === 1);
-      const t2 = data.riassunto.filter(e => e.tempo === 2);
+      const t1 = data.riassunto.filter(e => e.tempo === 1).sort((a, b) => parseMinuteSortValue(a.min) - parseMinuteSortValue(b.min));
+      const t2 = data.riassunto.filter(e => e.tempo === 2).sort((a, b) => parseMinuteSortValue(a.min) - parseMinuteSortValue(b.min));
       const renderEvents = list => list.map(e => {
         const isGoal = e.tipo === 'gol' || e.tipo === 'autogol';
         return `

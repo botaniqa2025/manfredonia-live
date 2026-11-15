@@ -240,6 +240,14 @@
   let currentData = null;
   let commFilter = 'all';
 
+  const DEFAULT_STATS = [
+    { label: "Tiri in porta", casa: "0", ospite: "0" },
+    { label: "Tiri fuori", casa: "0", ospite: "0" },
+    { label: "Calci d'angolo", casa: "0", ospite: "0" },
+    { label: "Ammonizioni", casa: "0", ospite: "0" },
+    { label: "Espulsioni", casa: "0", ospite: "0" }
+  ];
+
   function openTab(tabId, btn) {
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
@@ -437,8 +445,13 @@
 
       const colCasa = data.casa.colore || '#0066b2';
       const colOspite = data.ospite.colore || '#dc2626';
+      const savedStats = data.statistiche || [];
+      const mergedStats = DEFAULT_STATS.map(def => {
+        const found = savedStats.find(s => s.label.toLowerCase() === def.label.toLowerCase());
+        return found ? found : { ...def };
+      });
 
-      document.getElementById('statistiche').innerHTML = data.statistiche.map(s => {
+      document.getElementById('statistiche').innerHTML = mergedStats.map(s => {
         const nC = parseFloat(s.casa) || 0;
         const nO = parseFloat(s.ospite) || 0;
         const tot = nC + nO;

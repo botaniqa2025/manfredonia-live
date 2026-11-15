@@ -592,7 +592,7 @@ function addQuickAction(){
   let addCorner = false;
 
   if(tipo === 'tiro_fuori'){
-    chgStat(1, squadra, 1); // +1 Tiri fuori
+    chgStat(1, squadra, 1);
     if(esito === 'angolo_difesa'){
       addCorner = true;
       frase = playerTag
@@ -620,7 +620,7 @@ function addQuickAction(){
           ]);
     }
   } else if(tipo === 'tiro_porta'){
-    chgStat(0, squadra, 1); // +1 Tiri in porta
+    chgStat(0, squadra, 1);
     const startPart = playerTag
       ? pickRandom([
           `Tiro in porta di ${playerTag}`,
@@ -665,7 +665,7 @@ function addQuickAction(){
   }
 
   if(addCorner){
-    chgStat(2, squadra, 1); // +1 Calci d'angolo
+    chgStat(2, squadra, 1);
   }
 
   matchData.commento.unshift({
@@ -827,7 +827,6 @@ function renderForm(){
   document.getElementById('logoCasa').value = matchData.casa.logo || '';
   document.getElementById('logoOspite').value = matchData.ospite.logo || '';
 
-  // Aggiorna etichette squadre nel generatore rapido
   const qaSq = document.getElementById('qaSquadra');
   qaSq.options[0].text = matchData.casa.nome || 'Casa';
   qaSq.options[1].text = matchData.ospite.nome || 'Ospite';
@@ -1023,6 +1022,7 @@ function addEvento(){
     let score = "";
     if (tipo === 'gol' || tipo === 'autogol') {
       chgGol(squadra, 1);
+      chgStat(0, squadra, 1); // +1 Tiri in porta automatico al gol/autogol
       score = `${matchData.casa.gol} - ${matchData.ospite.gol}`;
     }
     matchData.riassunto.push({ tempo, min, squadra, tipo, score, testo, extra });

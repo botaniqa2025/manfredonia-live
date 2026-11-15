@@ -16,6 +16,7 @@
   .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
   label{display:block;font-size:11px;font-weight:700;color:#64748b;margin-bottom:3px}
   input[type="text"],input[type="number"],input[type="password"],select,textarea{width:100%;padding:9px;border:1px solid #cbd5e1;border-radius:8px;font-size:14px;background:#fff}
+  input[type="color"]{width:100%;height:38px;padding:3px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;cursor:pointer}
   textarea{resize:vertical;min-height:60px}
   .score-ctrl{display:flex;align-items:center;justify-content:center;gap:12px;background:#f8fafc;padding:10px;border-radius:10px;margin-top:8px}
   .btn-circle{width:38px;height:38px;border-radius:50%;border:none;background:#005596;color:#fff;font-size:20px;font-weight:800;cursor:pointer}
@@ -255,9 +256,8 @@
         <label>Tipo / Icona</label>
         <select id="commIcona" onchange="onCommIconChange()">
           <option value="SOLO_MIN">💬 Solo Minuto (azione senza icona)</option>
-          <option value="⚽">⚽ Azione / Tiro</option>
-          <option value="🥅">🥅 GOOOOL! (Blu scuro)</option>
-          <option value="🔴">🔴 Autogol (Blu scuro)</option>
+          <option value="🥅">🥅 GOOOOL! (Grassetto Rosso)</option>
+          <option value="🔴">🔴 Autogol (Grassetto Rosso)</option>
           <option value="🟨">🟨 Ammonizione</option>
           <option value="🟥">🟥 Espulsione</option>
           <option value="🔄">🔄 Sostituzione</option>
@@ -292,20 +292,24 @@
     <div id="boxStatistiche"></div>
   </div>
 
-  <!-- IMPOSTAZIONI PARTITA, STADIO, ALLENATORI, ARBITRI E LOGHI -->
+  <!-- IMPOSTAZIONI PARTITA, COLORI BARRE, STADIO, ALLENATORI, ARBITRI E LOGHI -->
   <div class="card" id="cardMatchInfo">
-    <h2>🏟️ Info Gara, Stadio, Allenatori & Arbitri</h2>
+    <h2>🏟️ Info Gara, Colori Barre, Stadio & Arbitri</h2>
     <div class="grid2">
       <div><label>Competizione</label><input type="text" id="competizione" oninput="markDirty()"></div>
       <div><label>Data e Ora</label><input type="text" id="dataOra" oninput="markDirty()"></div>
     </div>
     <div class="grid2" style="margin-top:8px;">
-      <div><label>Stadio</label><input type="text" id="stadio" placeholder="Stadio Miramare" oninput="markDirty()"></div>
-      <div><label>Città</label><input type="text" id="citta" placeholder="Manfredonia" oninput="markDirty()"></div>
-    </div>
-    <div class="grid2" style="margin-top:8px;">
       <div><label>Squadra Casa</label><input type="text" id="nomeCasa" oninput="markDirty()"></div>
       <div><label>Squadra Ospite</label><input type="text" id="nomeOspite" oninput="markDirty()"></div>
+    </div>
+    <div class="grid2" style="margin-top:8px;">
+      <div><label>Colore Barra Casa</label><input type="color" id="coloreCasa" value="#0066b2" oninput="markDirty()"></div>
+      <div><label>Colore Barra Ospite</label><input type="color" id="coloreOspite" value="#dc2626" oninput="markDirty()"></div>
+    </div>
+    <div class="grid2" style="margin-top:8px;">
+      <div><label>Stadio</label><input type="text" id="stadio" placeholder="Stadio Miramare" oninput="markDirty()"></div>
+      <div><label>Città</label><input type="text" id="citta" placeholder="Manfredonia" oninput="markDirty()"></div>
     </div>
     <div class="grid2" style="margin-top:8px;">
       <div><label>Allenatore Casa</label><input type="text" id="allCasa" placeholder="Mister..." oninput="markDirty()"></div>
@@ -352,7 +356,9 @@ let hasUnsavedChanges = false;
 const DEFAULT_STATS = [
   { label: "Tiri in porta", casa: "0", ospite: "0", percCasa: 50 },
   { label: "Tiri fuori", casa: "0", ospite: "0", percCasa: 50 },
-  { label: "Calci d'angolo", casa: "0", ospite: "0", percCasa: 50 }
+  { label: "Calci d'angolo", casa: "0", ospite: "0", percCasa: 50 },
+  { label: "Ammonizioni", casa: "0", ospite: "0", percCasa: 50 },
+  { label: "Espulsioni", casa: "0", ospite: "0", percCasa: 50 }
 ];
 
 function pad2(n){
@@ -534,7 +540,7 @@ function syncTextToPlayers(){
   refreshQuickPlayers();
 }
 
-/* --- LOGICA AZIONI RAPIDE (TIRI & ANGOLI) --- */
+/* --- LOGICA AZIONI RAPIDE (TIRI SENZA ICONA & ANGOLI CON BANDIERINA) --- */
 function refreshQuickPlayers(){
   if(!matchData) return;
   const team = document.getElementById('qaSquadra').value;
@@ -588,11 +594,11 @@ function addQuickAction(){
   const keeperTag = getOpposingKeeper(squadra);
 
   let frase = '';
-  let icona = '⚽';
+  let icona = ''; // Nessuna icona del pallone per i tiri
   let addCorner = false;
 
   if(tipo === 'tiro_fuori'){
-    chgStat(1, squadra, 1);
+    chgStat(1, squadra, 1); // +1 Tiri fuori
     if(esito === 'angolo_difesa'){
       addCorner = true;
       frase = playerTag
@@ -620,7 +626,7 @@ function addQuickAction(){
           ]);
     }
   } else if(tipo === 'tiro_porta'){
-    chgStat(0, squadra, 1);
+    chgStat(0, squadra, 1); // +1 Tiri in porta
     const startPart = playerTag
       ? pickRandom([
           `Tiro in porta di ${playerTag}`,
@@ -665,7 +671,7 @@ function addQuickAction(){
   }
 
   if(addCorner){
-    chgStat(2, squadra, 1);
+    chgStat(2, squadra, 1); // +1 Calci d'angolo
   }
 
   matchData.commento.unshift({
@@ -773,6 +779,8 @@ async function init(){
     return found ? found : { ...def };
   });
   if(!matchData.infoGara) matchData.infoGara = { arbitro: "", ass1: "", ass2: "" };
+  if(!matchData.casa.colore) matchData.casa.colore = "#0066b2";
+  if(!matchData.ospite.colore) matchData.ospite.colore = "#dc2626";
 
   sortCronacaAndEvents();
   onQuickTipoChange();
@@ -815,6 +823,8 @@ function renderForm(){
   stEl.value = ['PRE-PARTITA','1° TEMPO','INTERVALLO','2° TEMPO','FINALE'].includes(matchData.stato) ? matchData.stato : '1° TEMPO';
   document.getElementById('nomeCasa').value = matchData.casa.nome || '';
   document.getElementById('nomeOspite').value = matchData.ospite.nome || '';
+  document.getElementById('coloreCasa').value = matchData.casa.colore || '#0066b2';
+  document.getElementById('coloreOspite').value = matchData.ospite.colore || '#dc2626';
   document.getElementById('lblCasa').innerText = "Gol " + matchData.casa.nome;
   document.getElementById('lblOspite').innerText = "Gol " + matchData.ospite.nome;
   document.getElementById('golCasa').innerText = matchData.casa.gol || 0;
@@ -955,7 +965,7 @@ function delComm(i){
   markDirty();
 }
 
-/* --- MODIFICA E AGGIUNTA EVENTI + GENERAZIONE FRASI IN COMMENTO --- */
+/* --- MODIFICA E AGGIUNTA EVENTI + GENERAZIONE FRASI & STATISTICHE --- */
 function editEv(i){
   const e = matchData.riassunto[i];
   editEvIndex = i;
@@ -1022,8 +1032,12 @@ function addEvento(){
     let score = "";
     if (tipo === 'gol' || tipo === 'autogol') {
       chgGol(squadra, 1);
-      chgStat(0, squadra, 1); // +1 Tiri in porta automatico al gol/autogol
+      chgStat(0, squadra, 1); // +1 Tiri in porta
       score = `${matchData.casa.gol} - ${matchData.ospite.gol}`;
+    } else if (tipo === 'giallo') {
+      chgStat(3, squadra, 1); // +1 Ammonizioni
+    } else if (tipo === 'rosso') {
+      chgStat(4, squadra, 1); // +1 Espulsioni
     }
     matchData.riassunto.push({ tempo, min, squadra, tipo, score, testo, extra });
 
@@ -1036,7 +1050,7 @@ function addEvento(){
     if (tipo === 'giallo') {
       matchData.commento.unshift({ isNota: false, min, icona: '🟨', testo: `Ammonito ${pTag}.`, saliente: false, isGol: false, score: '' });
     } else if (tipo === 'rosso') {
-      matchData.commento.unshift({ isNota: false, min, icona: '🟥', testo: `Espulso ${pTag}.`, saliente: false, isGol: false, score: '' });
+      matchData.commento.unshift({ isNota: false, min, icona: '🟥', testo: `Espulso ${pTag}.`, saliente: true, isGol: false, score: '' });
     } else if (tipo === 'cambio') {
       const fraseCambio = outTag
         ? `Sostituzione ${teamName}: esce ${outTag} ed entra ${pTag}.`
@@ -1060,7 +1074,7 @@ function addEvento(){
     refreshPlayerDropdowns();
     renderLists();
     markDirty();
-    showToast("Aggiunto a Riassunto e Commento! Premi PUBBLICA");
+    showToast("Aggiunto a Riassunto, Cronaca e Statistiche!");
   }
 }
 
@@ -1141,6 +1155,8 @@ async function saveToGitHub(){
   matchData.citta = document.getElementById('citta').value.trim();
   matchData.casa.nome = document.getElementById('nomeCasa').value.trim();
   matchData.ospite.nome = document.getElementById('nomeOspite').value.trim();
+  matchData.casa.colore = document.getElementById('coloreCasa').value;
+  matchData.ospite.colore = document.getElementById('coloreOspite').value;
   matchData.casa.allenatore = document.getElementById('allCasa').value.trim();
   matchData.ospite.allenatore = document.getElementById('allOspite').value.trim();
   matchData.infoGara = {

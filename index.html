@@ -84,21 +84,24 @@
 
   .half-bar { background: #f1f5f9; padding: 6px 10px; font-size: 11px; font-weight: 800; color: #475569; border-radius: 6px; margin: 10px 0 6px; text-transform: uppercase; letter-spacing: 0.5px; }
   
-  /* Righe Riassunto + evidenziazione azzurrina sui Gol */
+  /* Righe Riassunto + evidenziazione sui Gol */
   .event-row { display: flex; align-items: center; padding: 9px 6px; border-bottom: 1px solid #f1f5f9; font-size: 13px; gap: 8px; border-radius: 6px; }
   .event-row.ospite { flex-direction: row-reverse; text-align: right; }
-  .event-row.is-goal { background: #f0f9ff; border-bottom-color: #e0f2fe; border-left: 3px solid #0284c7; }
-  .event-row.ospite.is-goal { border-left: none; border-right: 3px solid #0284c7; }
+  .event-row.is-goal { background: #fef2f2; border-bottom-color: #fee2e2; border-left: 3px solid #dc2626; }
+  .event-row.ospite.is-goal { border-left: none; border-right: 3px solid #dc2626; }
   .ev-min { font-weight: 700; color: #64748b; min-width: 30px; font-size: 12px; }
   .ev-pill { display: inline-flex; align-items: center; justify-content: center; gap: 5px; padding: 4px 9px; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; font-weight: 800; font-size: 12.5px; color: #0f172a; box-shadow: 0 1px 2px rgba(0,0,0,0.03); }
   .ev-pill.autogol { border-color: #fecaca; background: #fef2f2; color: #b91c1c; }
   .ev-text { font-weight: 700; color: #0f172a; }
+  .event-row.is-goal .ev-text { color: #dc2626; font-weight: 800; }
   .ev-extra { color: #64748b; font-weight: 400; font-size: 12px; }
 
+  /* Statistiche con barre bicolore personalizzabili */
   .stat-item { margin-bottom: 14px; }
-  .stat-labels { display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; margin-bottom: 4px; }
-  .stat-bar-bg { height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; display: flex; }
-  .stat-bar-fill { background: #0066b2; height: 100%; transition: width 0.4s; }
+  .stat-labels { display: flex; justify-content: space-between; font-size: 12.5px; font-weight: 800; margin-bottom: 5px; }
+  .stat-bar-bg { height: 9px; background: #e2e8f0; border-radius: 5px; overflow: hidden; display: flex; gap: 2px; }
+  .stat-bar-casa { height: 100%; transition: width 0.4s; }
+  .stat-bar-ospite { height: 100%; transition: width 0.4s; }
 
   .lineup-teams-head { display: flex; justify-content: space-between; font-size: 12.5px; font-weight: 800; color: #003366; padding: 0 4px 6px; border-bottom: 2px solid #005596; }
   .lineup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 6px; }
@@ -120,16 +123,16 @@
   .sub-btn { flex: 1; padding: 7px 10px; border: none; border-radius: 7px; font-size: 11.5px; font-weight: 800; color: #64748b; background: transparent; cursor: pointer; transition: 0.2s; }
   .sub-btn.active { background: #fff; color: #0f172a; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
 
-  /* Commenti + evidenziazione azzurrina sui Gol */
+  /* Commenti + Gol in Grassetto Rosso */
   .comm-item { padding: 12px 8px; border-bottom: 1px solid #e2e8f0; border-radius: 6px; }
   .comm-item:last-child { border-bottom: none; }
-  .comm-item.is-goal { background: #f0f9ff; border-bottom-color: #bae6fd; border-left: 3px solid #0284c7; margin: 4px 0; }
+  .comm-item.is-goal { background: #fef2f2; border-bottom-color: #fecaca; border-left: 3px solid #dc2626; margin: 4px 0; }
   .comm-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
   .comm-min { font-weight: 700; font-size: 12.5px; color: #334155; }
   .comm-pill { display: inline-flex; align-items: center; justify-content: center; gap: 5px; padding: 3px 8px; border: 1px solid #cbd5e1; border-radius: 7px; background: #fff; font-size: 12.5px; font-weight: 800; color: #0f172a; }
   .comm-body { font-size: 13px; line-height: 1.48; color: #334155; font-weight: 400; }
   .comm-body.saliente { font-weight: 700; color: #0f172a; }
-  .comm-body.gol-text { font-weight: 800; color: #003366; }
+  .comm-body.gol-text { font-weight: 800; color: #dc2626; }
   .comm-note { padding: 12px 4px; border-bottom: 1px solid #e2e8f0; font-size: 13px; line-height: 1.48; color: #334155; }
   .comm-note:last-child { border-bottom: none; }
   .comm-note.saliente { font-weight: 700; color: #0f172a; }
@@ -302,7 +305,7 @@
     }
 
     document.getElementById('commentoList').innerHTML = list.map(c => {
-      const isGol = (c.icona === '🥅' || c.icona === '⚽' || c.icona === '🔴') && c.isGol;
+      const isGol = !!c.isGol || c.icona === '🥅' || c.icona === '🔴';
       const isSaliente = c.saliente || isGol;
       const bodyClass = isGol ? 'comm-body gol-text' : (isSaliente ? 'comm-body saliente' : 'comm-body');
 
@@ -433,18 +436,32 @@
         ${t2.length ? `<div class="half-bar">2° Tempo</div>` + renderEvents(t2) : ''}
       `;
 
-      document.getElementById('statistiche').innerHTML = data.statistiche.map(s => `
-        <div class="stat-item">
-          <div class="stat-labels">
-            <span>${s.casa}</span>
-            <span style="color:#64748b">${s.label}</span>
-            <span>${s.ospite}</span>
+      const colCasa = data.casa.colore || '#0066b2';
+      const colOspite = data.ospite.colore || '#dc2626';
+
+      document.getElementById('statistiche').innerHTML = data.statistiche.map(s => {
+        const nC = parseFloat(s.casa) || 0;
+        const nO = parseFloat(s.ospite) || 0;
+        const tot = nC + nO;
+        const pC = tot > 0 ? Math.round((nC / tot) * 100) : 50;
+        const pO = 100 - pC;
+        const cLeft = tot > 0 ? colCasa : '#cbd5e1';
+        const cRight = tot > 0 ? colOspite : '#e2e8f0';
+
+        return `
+          <div class="stat-item">
+            <div class="stat-labels">
+              <span style="color:${colCasa}">${s.casa}</span>
+              <span style="color:#475569">${s.label}</span>
+              <span style="color:${colOspite}">${s.ospite}</span>
+            </div>
+            <div class="stat-bar-bg">
+              <div class="stat-bar-casa" style="width:${pC}%;background:${cLeft}"></div>
+              <div class="stat-bar-ospite" style="width:${pO}%;background:${cRight}"></div>
+            </div>
           </div>
-          <div class="stat-bar-bg">
-            <div class="stat-bar-fill" style="width:${s.percCasa}%"></div>
-          </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
 
       const info = data.infoGara || {};
       const hasInfo = info.arbitro || info.ass1 || info.ass2;
